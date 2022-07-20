@@ -12,11 +12,12 @@ A Virtual file system designed to make building ArmA 3 mods requre signifigantly
 | ----------- | ------------------------------- | ------------------------------------- |
 | ArmA 3 Path | The path to your ArmA 3 folder. | `VirtualPDrive.exe '/path/to/ArmA 3'` |
 
-| Option | Long Option | Description | Usage |
-| ------ | ----------- | ----------- | ----- |
-| -m     | --mod | Add a mod to the parameters. Specify none to load all workshop mods. | `VirtualPDrive.exe -m @ACE -m @CBA -m @Another_Cool_Mod` |
-| -o | --output | Output folder for ProjFS | `VirtualPDrive.exe -o /arma3/pdrive` |
-| | --no-mods | Forces the application to only load base arma and local files. | `VirtualPDrive.exe --no-mods` |
+| Option | Long Option | Description                                                          | Usage                                                    |
+| ------ | ----------- | -------------------------------------------------------------------- | -------------------------------------------------------- |
+| -m     | --mod       | Add a mod to the parameters. Specify none to load all workshop mods. | `VirtualPDrive.exe -m @ACE -m @CBA -m @Another_Cool_Mod` |
+| -o     | --output    | Output folder for ProjFS                                             | `VirtualPDrive.exe -o /arma3/pdrive`                     |
+|        | --no-mods   | Forces the application to only load base arma and local files.       | `VirtualPDrive.exe --no-mods`                            |
+| -l     | --local     | A local directory to copy file names from into the virtual folder.   | `VirtualPDrive.exe --local /dummy_files`                 |
 
 Example Call (PowerShell):
 ```ps
