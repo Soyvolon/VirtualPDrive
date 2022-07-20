@@ -9,6 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtualMemoryProvider", "Vi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProjectedFSLib.Managed", "ProjectedFSLib.Managed.API\NetFramework\ProjectedFSLib.Managed.vcxproj", "{4E5F40B3-B56F-4B62-92CB-68E7E0E36AFA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. sln", "1. sln", "{EBB919DF-5B76-4AF8-A607-149BD129FBFF}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
