@@ -63,7 +63,13 @@ public class MemoryDirectory : MemoryItem
     public MemoryFile AddFile(string name, string extension)
     {
         var file = new MemoryFile(name, extension);
-        Files.Add(file);
+        if(!Files.Add(file))
+        {
+            if(Files.TryGetValue(file, out var actual))
+            {
+                file = actual;
+            }
+        }
 
         return file;
     }

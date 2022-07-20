@@ -29,8 +29,8 @@ public class Program
     [Option("-o|--output", CommandOptionType.SingleValue, Description = "Output path for this command.")]
     private string OutputPath { get; set; } = "output";
 
-    //[Option("-l|--local", CommandOptionType.SingleValue, Description = "Local file tree to insert into the output.")]
-    //private string? Local { get; set; } = null;
+    [Option("-l|--local", CommandOptionType.SingleValue, Description = "Local file tree to insert into the output.")]
+    private string? Local { get; set; } = null;
 
     private async Task OnExecute()
     {
@@ -53,7 +53,17 @@ public class Program
 
         await ReadArmAPBOAsync(provider);
 
-        Log.Information("Setup complete. ArmA 3 Virtual pbo drive is running.");
+        if (!string.IsNullOrWhiteSpace(Local))
+        {
+            Local = Path.Combine(Environment.CurrentDirectory, Local);
+            await LoadLocalFilesAsync(provider);
+        }
+
+        Log.Information("Setup complete. Starting virtaul file server.");
+
+        provider.StartVirtualization();
+
+        Log.Information($"Virtual file server started at {OutputPath}");
 
         // Keep this running.
         await Task.Delay(-1);
@@ -93,8 +103,6 @@ public class Program
         };
 
         var provider = new MemoryProvider(options);
-
-        provider.StartVirtualization();
 
         Log.Information("Starting virtual provider.");
 
@@ -188,5 +196,32 @@ public class Program
         {
             Log.Warning($"No prefix was found for {pboPath}");
         }
+    }
+
+    private Task LoadLocalFilesAsync(MemoryProvider provider)
+    {
+        Log.Information("Adding local file system to virtual provider...");
+
+        List<string> files = new();
+        Stack<string> searchStack = new();
+        searchStack.Push(Local!);
+
+        while (searchStack.TryPop(out var search))
+        {
+            files.AddRange(Directory.GetFiles(search));
+
+            foreach (var dir in Directory.GetDirectories(search))
+                searchStack.Push(dir);
+        }
+
+        foreach(var file in files)
+        {
+            var path = Path.GetRelativePath(Local!, file);
+            provider.MemorySystem.AddFile(path);
+        }
+
+        Log.Information($"...Added {files.Count} local files.");
+
+        return Task.CompletedTask;
     }
 }
