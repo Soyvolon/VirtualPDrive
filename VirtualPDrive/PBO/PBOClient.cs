@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 namespace VirtualPDrive.PBO;
 public static class PBOClient
 {
-    public static async Task<PBOReader> LoadPBOAsync(string path, string[] extensions)
+    public static async Task<PBOReader> LoadPBOAsync(string path)
     {
         FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        var reader = new PBOReader(fs, extensions);
+        var reader = new PBOReader(fs);
 
         await reader.InitalizeAsync();
 

@@ -16,19 +16,10 @@ public class PBOReader : BinaryReader, IDisposable, IAsyncDisposable
     public List<PBOFile> Files { get; set; } = new();
     public IReadOnlyDictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
 
-    private Regex PatchesRegex = new Regex(@"CfgPatches");
-    private Regex DropTailRegex = new Regex(@"CfgPatches.*");
-    private Regex SpacerRegex = new Regex(@"\0+");
-    private Regex GetPrefixRegex = new Regex(@"(?<=prefix\W+)\S+");
-    private Regex FilesRegex = new Regex(@"[a-zA-Z0-9\\/._]+\.[a-zA-Z0-9\\/._]+(?= +|$)");
-
-    private string[] Extensions { get; init; }
-
-    public PBOReader(FileStream pboStream, string[] extensions)
+    public PBOReader(FileStream pboStream)
         : base(pboStream)
     {
         PBOStream = pboStream;
-        Extensions = extensions;
     }
 
     /// <summary>

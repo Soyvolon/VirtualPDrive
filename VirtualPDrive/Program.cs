@@ -29,14 +29,8 @@ public class Program
     [Option("-o|--output", CommandOptionType.SingleValue, Description = "Output path for this command.")]
     private string OutputPath { get; set; } = "output";
 
-    [Option("-l|--local", CommandOptionType.SingleValue, Description = "Local file tree to insert into the output.")]
-    private string? Local { get; set; } = null;
-
-    [Option("-e|--extension", CommandOptionType.MultipleValue, Description = "Set extensions that are allowed to be parsed.")]
-    private string[] Extensions { get; set; } = new string[]
-    {
-        ".bin", ".cpp", ".sqf", ".ogg", ".wav", ".png", ".jpg", ".jpeg", ".fsm", ".pa*", ".wss"
-    };
+    //[Option("-l|--local", CommandOptionType.SingleValue, Description = "Local file tree to insert into the output.")]
+    //private string? Local { get; set; } = null;
 
     private async Task OnExecute()
     {
@@ -163,7 +157,7 @@ public class Program
 
     private async Task ReadPBO(string pboPath, MemoryProvider provider)
     {
-        var pbo = await PBOClient.LoadPBOAsync(pboPath, Extensions);
+        var pbo = await PBOClient.LoadPBOAsync(pboPath);
         if (pbo.Headers.TryGetValue("prefix", out var prefix))
         {
             foreach (var file in pbo.Files)
