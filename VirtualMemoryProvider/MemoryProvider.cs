@@ -9,8 +9,8 @@ using System.Linq;
 using System.IO;
 using System.Threading;
 using Microsoft.Windows.ProjFS;
-using VirtualMemoryProvider.FileSystem;
 using System.Diagnostics.CodeAnalysis;
+using VirtualMemoryProvider.FileSystem;
 
 namespace VirtualMemoryProvider
 {
@@ -18,7 +18,7 @@ namespace VirtualMemoryProvider
     /// This is a simple file system "reflector" provider.  It projects files and directories from
     /// a directory called the "layer root" into the virtualization root, also called the "scratch root".
     /// </summary>
-    public class MemoryProvider
+    public class MemoryProvider : IDisposable
     {
         // These variables hold the layer and scratch paths.
         // This is the virtual root - hold virtual data.
@@ -32,6 +32,7 @@ namespace VirtualMemoryProvider
         private NotificationCallbacks notificationCallbacks;
 
         private bool isSymlinkSupportAvailable;
+        private bool disposedValue;
 
         public MemoryProviderOptions Options { get; }
 
@@ -141,9 +142,9 @@ namespace VirtualMemoryProvider
 
         protected IEnumerable<ProjectedFileInfo> GetChildItemsInLayer(string relativePath)
         {
-            if(this.MemorySystem.TryGetDirectory(relativePath, out var relRoot))
+            if (this.MemorySystem.TryGetDirectory(relativePath, out var relRoot))
             {
-                foreach(var item in relRoot.GetEntries())
+                foreach (var item in relRoot.GetEntries())
                 {
                     yield return new(item.Name, Path.Combine(relativePath, item.Name), 0, item is MemoryDirectory);
                 }
@@ -188,7 +189,7 @@ namespace VirtualMemoryProvider
             return HResult.Ok;
         }
 
-        private bool FileOrDirectoryExistsInLayer(string path, 
+        private bool FileOrDirectoryExistsInLayer(string path,
             [NotNullWhen(true)] out ProjectedFileInfo? fileInfo)
         {
             if (this.MemorySystem.TryGetFile(path, out var file))
@@ -643,6 +644,27 @@ namespace VirtualMemoryProvider
                     triggeringProcessId,
                     triggeringProcessImageFileName);
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    virtualizationInstance.StopVirtualizing();
+                    MemorySystem.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
