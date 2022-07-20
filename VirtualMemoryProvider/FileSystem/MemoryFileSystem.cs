@@ -7,10 +7,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace VirtualMemoryProvider.FileSystem;
-public class MemoryFileSystem
+public class MemoryFileSystem : IDisposable
 {
     public readonly string _rootPath = "";
-    public MemoryDirectory Root { get; init; }
+    private bool disposedValue;
+
+    public MemoryDirectory Root { get; private set; }
 
     public MemoryFileSystem(string rootPath)
     {
@@ -61,4 +63,27 @@ public class MemoryFileSystem
 
         return parent;
     }
+
+#nullable disable
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+
+            }
+
+            Root = null;
+            disposedValue = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+#nullable enable
 }

@@ -18,7 +18,7 @@ namespace VirtualMemoryProvider
     /// This is a simple file system "reflector" provider.  It projects files and directories from
     /// a directory called the "layer root" into the virtualization root, also called the "scratch root".
     /// </summary>
-    public class MemoryProvider
+    public class MemoryProvider : IDisposable
     {
         // These variables hold the layer and scratch paths.
         // This is the virtual root - hold virtual data.
@@ -32,6 +32,7 @@ namespace VirtualMemoryProvider
         private NotificationCallbacks notificationCallbacks;
 
         private bool isSymlinkSupportAvailable;
+        private bool disposedValue;
 
         public MemoryProviderOptions Options { get; }
 
@@ -643,6 +644,27 @@ namespace VirtualMemoryProvider
                     triggeringProcessId,
                     triggeringProcessImageFileName);
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    virtualizationInstance.StopVirtualizing();
+                    MemorySystem.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
