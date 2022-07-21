@@ -19,6 +19,9 @@ public class VirtualClient
     public delegate Task OnStartEventHandler(object sender, VirtualClientEventArgs args);
     public event OnStartEventHandler? OnStart;
 
+    public delegate Task OnErrorEventHandler(object sender, VirtualClientErrorEventArgs args);
+    public event OnErrorEventHandler? OnError;
+
     public delegate Task OnShutdownEventHandler(object sender);
     public event OnShutdownEventHandler? OnShutdown;
     #endregion
@@ -38,7 +41,7 @@ public class VirtualClient
 
         if (provider is null)
         {
-            Log.Error("No provider was built for the virtual file system.");
+            LogError("No provider was built for the virtual file system.");
             return;
         }
 
@@ -52,7 +55,12 @@ public class VirtualClient
 
         Log.Information("Setup complete. Starting virtaul file server.");
 
-        provider.StartVirtualization();
+        if(!provider.StartVirtualization())
+        {
+            LogError("Virtualization start failed. Another instance with the same" +
+                " output route may be running.");
+            return;
+        }
 
         Log.Information($"Virtual file server started at {Settings.OutputPath}");
 
@@ -79,7 +87,7 @@ public class VirtualClient
         Settings.ArmAPath = Path.Combine(Environment.CurrentDirectory, Settings.ArmAPath);
         if (!Directory.Exists(Settings.ArmAPath))
         {
-            Log.Error("ArmA directory not found.");
+            LogError("ArmA directory not found.");
             return null;
         }
 
@@ -87,7 +95,7 @@ public class VirtualClient
 
         if (!File.Exists(arma3path))
         {
-            Log.Error("Could not find amra3.exe");
+            LogError("Could not find amra3.exe");
             return null;
         }
 
@@ -227,6 +235,22 @@ public class VirtualClient
         Log.Information($"...Added {files.Count} Settings.Local files.");
 
         return Task.CompletedTask;
+    }
+
+    private void LogError(string msg, Exception? ex = null)
+    {
+        Log.Error(msg);
+        _ = Task.Run(async () =>
+        {
+            if (OnError is not null)
+            {
+                await OnError.Invoke(this, new()
+                {
+                    Message = msg,
+                    Exception = ex
+                });
+            }
+        });
     }
 
     protected virtual void Dispose(bool disposing)

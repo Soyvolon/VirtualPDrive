@@ -1,34 +1,44 @@
+using Microsoft.OpenApi.Models;
+
+using Serilog;
+using Serilog.Events;
+
+using VirtualPDrive.API.Services.VC;
+
 namespace VirtualPDrive.API;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .CreateLogger();
 
-        // Add services to the container.
-
-        builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-
-        var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
+        try
         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            Log.Information("Starting web host");
+            CreateHostBuilder(args).Build().Run();
+            return 0;
         }
-
-        app.UseHttpsRedirection();
-
-        app.UseAuthorization();
-
-
-        app.MapControllers();
-
-        app.Run();
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Host terminated unexpectedly");
+            return 1;
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
     }
+
+    public static IHostBuilder CreateHostBuilder(string[] args)
+        => Host.CreateDefaultBuilder(args)
+            .UseSerilog()
+            .ConfigureWebHostDefaults(builder =>
+            {
+                builder.UseStartup<Startup>();
+            });
 }
