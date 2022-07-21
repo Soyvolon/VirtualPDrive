@@ -1,5 +1,7 @@
 ﻿using Serilog;
 
+using SwiftPbo;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using VirtualMemoryProvider;
-
-using VirtualPDrive.PBO;
 
 namespace VirtualPDrive.Client;
 public class VirtualClient
@@ -178,12 +178,12 @@ public class VirtualClient
 
     private async Task ReadPBO(string pboPath, MemoryProvider provider)
     {
-        var pbo = await PBOClient.LoadPBOAsync(pboPath);
-        if (pbo.Headers.TryGetValue("prefix", out var prefix))
+        var pbo = new PboArchive(pboPath);
+        if (!string.IsNullOrWhiteSpace(pbo.ProductEntry.Prefix))
         {
             foreach (var file in pbo.Files)
             {
-                var root = Path.Join(prefix, Path.GetDirectoryName(file.RelativePath) ?? "");
+                var root = Path.Join(pbo.ProductEntry.Prefix, Path.GetDirectoryName(file.FileName) ?? "");
 
                 if (root is not null)
                 {
@@ -202,7 +202,7 @@ public class VirtualClient
                 }
             }
 
-            Log.Information($"Parsed {prefix}");
+            Log.Verbose("Parsed {prefix}", pbo.ProductEntry.Prefix);
         }
         else
         {
