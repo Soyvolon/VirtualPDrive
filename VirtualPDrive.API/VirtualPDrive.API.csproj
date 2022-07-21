@@ -44,4 +44,8 @@
 	  </None>
 	</ItemGroup>
 
+	<Target Name="PackRelease" AfterTargets="Publish">
+		<Exec Command="powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File ..\Post-Publish.ps1 ..\Releases\vpd-api-win-x64 ..\Releases\vpd-api-win-x64\*" />
+	</Target>
+
 </Project>
