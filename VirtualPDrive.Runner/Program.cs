@@ -9,7 +9,7 @@ using VirtualMemoryProvider;
 using VirtualPDrive.Client;
 using VirtualPDrive.PBO;
 
-namespace VirtualPDrive;
+namespace VirtualPDrive.Runner;
 
 [Command(Name = "vpdrive", Description = "A virtual ArmA 3 P drive builder.")]
 public class Program

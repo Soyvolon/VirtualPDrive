@@ -1,33 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\VirtualMemoryProvider\VirtualMemoryProvider.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="dummy_files\general_kenobi\lightsaber.blue">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dummy_files\general_kenobi\lightsaber.green">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dummy_files\hello_there.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="dummy_files\level_w\winging_this_project.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>
