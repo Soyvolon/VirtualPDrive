@@ -18,12 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. sln", "1. sln", "{EBB919
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtualPDrive.API", "VirtualPDrive.API\VirtualPDrive.API.csproj", "{0F2C2A60-FEC4-4EC0-ADB3-9866B17B1A2B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2. powershell", "2. powershell", "{9B3ED673-4B57-4593-A396-52D73E13C8D0}"
-	ProjectSection(SolutionItems) = preProject
-		powershell\Create-Virtual-Instance.ps1 = powershell\Create-Virtual-Instance.ps1
-		powershell\Destroy-Virtual-Instance.ps1 = powershell\Destroy-Virtual-Instance.ps1
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

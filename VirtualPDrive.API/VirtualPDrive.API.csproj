@@ -32,4 +32,16 @@
 		</Content>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Examples\Create-Virtual-Instance.ps1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Examples\CVI-Runner.ps1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Examples\Destroy-Virtual-Instance.ps1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>
