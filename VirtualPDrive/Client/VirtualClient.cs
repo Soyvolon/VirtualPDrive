@@ -90,20 +90,20 @@ public class VirtualClient
 
         Log.Information("Setup complete. Starting virtaul file server.");
 
+        if (Settings.PreLoad)
+        {
+            Log.Information("Preloading allowed files...");
+
+            await Provider!.MemorySystem.InitalizeFileSystemAsync();
+
+            Log.Information("File preloading complete.");
+        }
+
         if (!Provider!.StartVirtualization())
         {
             LogError("Virtualization start failed. Another instance with the same" +
                 " output route may be running.");
             return;
-        }
-
-        if (Settings.PreLoad)
-        {
-            Log.Information("Preloading allowed files...");
-
-            await Provider.MemorySystem.InitalizeFileSystemAsync();
-
-            Log.Information("File preloading complete.");
         }
 
         Log.Information($"Virtual file server started at {Settings.OutputPath}");
@@ -139,15 +139,9 @@ public class VirtualClient
         else if (!Settings.NoClean)
         {
             Log.Information("Cleaning output directory");
-            try
-            {
-                Directory.Delete(Settings.OutputPath, true);
-            }
-            catch (Exception ex)
-            {
-                // Sometimes, things happen.
-                Log.Warning("Failed to fully clean output directory {ex}", ex);
-            }
+
+            CleanOutput();
+
             Directory.CreateDirectory(Settings.OutputPath);
         }
 
@@ -314,6 +308,38 @@ public class VirtualClient
         });
     }
 
+    private void CleanOutput()
+    {
+        Stack<string> dirStack = new();
+        dirStack.Push(Settings.OutputPath);
+
+        while (dirStack.TryPop(out var dir))
+        {
+            var files = Directory.GetFiles(dir);
+            foreach (var f in files)
+            {
+                try
+                {
+                    File.Delete(f);
+                }
+                catch { }
+            }
+
+            var dirs = Directory.GetDirectories(dir);
+            foreach (var d in dirs)
+            {
+                try
+                {
+                    Directory.Delete(d, true);
+                }
+                catch
+                {
+                    dirStack.Push(d);
+                }
+            }
+        }
+    }
+
     public void Dispose()
     {
         Log.Information("Closing file server.");
@@ -335,20 +361,13 @@ public class VirtualClient
         OnError = null;
         Provider = null;
 
-        Log.Information("File server closed.");
-
-        try
-        {
-            Directory.Delete(Settings.OutputPath, true);
-        }
-        catch 
-        {
-            // Oh well we tried.
-        }
+        CleanOutput();
 
         if (OnShutdown is not null)
             OnShutdown?.Invoke(this);
 
         OnShutdown = null;
+
+        Log.Information("File server closed.");
     }
 }
