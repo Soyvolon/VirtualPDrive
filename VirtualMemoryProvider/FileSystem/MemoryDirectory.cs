@@ -65,9 +65,9 @@ public class MemoryDirectory : IMemoryItem
         return false;
     }
 
-    public MemoryFile AddFile(FileEntry? entry, string? srcPath, bool allowRead, string name, string ext)
+    public MemoryFile AddFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string ext, FileReaderUtil fileReader)
     {
-        var file = new MemoryFile(entry, srcPath, allowRead, name, ext);
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, allowRead, name, ext, fileReader);
         if(!Files.Add(file))
         {
             if(Files.TryGetValue(file, out var actual))
@@ -94,15 +94,27 @@ public class MemoryDirectory : IMemoryItem
         return dir;
     }
 
-    internal Task InitalizeDirectory()
+    internal async Task InitalizeDirectory(bool wait)
     {
-        return Task.Run(async () =>
-        {
-            List<Task> runners = new();
-            foreach (var file in Files)
-                runners.Add(file.InitalizeAsync());
+        foreach (var file in Files)
+            file.Initalize();
 
-            await Task.WhenAll(runners);
-        });
+        if (wait)
+        {
+            foreach (var file in Files)
+                await file.WaitForInitAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        foreach (var file in Files)
+            file.Dispose();
+
+        foreach (var dir in Directories)
+            dir.Dispose();
+
+        Files = null;
+        Directories = null;
     }
 }

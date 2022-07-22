@@ -12,7 +12,13 @@ public class Program
     public static int Main(string[] args)
     {
         Log.Logger = new LoggerConfiguration()
+#if DEBUG
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Debug()
+#else
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Information()
+#endif
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();

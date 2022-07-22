@@ -13,19 +13,20 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace VirtualMemoryProvider.Util;
-public class FileReaderUtil
+public class FileReaderUtil : IDisposable
 {
     private class State
     {
         public Guid Key { get; set; }
     }
 
-    private readonly PriorityQueue<Task, int> _derapQueue;
+    private readonly ConcurrentQueue<MemoryFile> _derapQueue;
     private readonly ConcurrentDictionary<Guid, Task> _activeRunners;
     private readonly int _maxRunners;
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _mmfLocks = new();
 
     private Task? queueRunner;
+    private readonly CancellationTokenSource _cancelSource;
+    private readonly CancellationToken _cancellationToken;
 
     public bool Running { get; set; }
 
@@ -35,40 +36,51 @@ public class FileReaderUtil
         _activeRunners = new();
         _maxRunners = runners;
 
+        _cancelSource = new CancellationTokenSource();
+        _cancellationToken = _cancelSource.Token;
+
         Running = false;
     }
 
-    public Task EnqueueAsync(MemoryFile file, bool priority, Action<byte[]> onComplete)
+    public void Enqueue(MemoryFile file, bool priority)
     {
+        _cancellationToken.ThrowIfCancellationRequested();
+
         if (!string.IsNullOrWhiteSpace(file.SrcPath))
         {
+            if (MMFUtil.Active is null)
+                MMFUtil.Active = new();
+
             // Setup the lock if needed.
-            if (!_mmfLocks.TryGetValue(file.SrcPath, out var _lock))
+            if (!MMFUtil.Active.Locks.TryGetValue(file.SrcPath, out _))
             {
-                _lock = new(1, 1);
-                _mmfLocks[file.SrcPath] = _lock;
+                var _lock = new SemaphoreSlim(1, 1);
+                MMFUtil.Active.Locks[file.SrcPath] = _lock;
             }
         }
 
-        var task = new Task(async (x) =>
-        {
-            var res = await ReadAndProcess(file);
-            onComplete.Invoke(res);
+        _cancellationToken.ThrowIfCancellationRequested();
 
-            _ = _activeRunners.TryRemove((x as State)!.Key, out _);
-        }, new State());
-
-        _derapQueue.Enqueue(task, priority ? 1 : 0);
+        if (!priority)
+            _derapQueue.Enqueue(file);
+        else
+            RunItem(file);
 
         StartIfNotStarted();
-
-        return task.WaitAsync(Timeout.InfiniteTimeSpan);
     }
 
-    private async Task<byte[]> ReadAndProcess(MemoryFile file)
+    private async Task ReadAndProcess(MemoryFile file)
     {
+        if (MMFUtil.Active is null)
+        {
+            file._initalizing = false;
+            return;
+        }
+
         MemoryMappedFile? mmf = null;
         string path = file.SrcPath ?? "";
+
+        _cancellationToken.ThrowIfCancellationRequested();
 
         // Get the stream to read from.
         Stream? stream = null;
@@ -76,18 +88,20 @@ public class FileReaderUtil
         {
             if (file.IsFromPBO)
             {
-                if (_mmfLocks.TryGetValue(file.SrcPath, out var _lock))
+                if (MMFUtil.Active.Locks.TryGetValue(file.SrcPath!, out var _lock))
                 {
-                    if (await _lock.WaitAsync(TimeSpan.FromSeconds(5)))
+                    if (await _lock.WaitAsync(TimeSpan.FromSeconds(5), _cancellationToken))
                     {
                         try
                         {
-                            mmf = GetMMF(file);
+                            mmf = MMFUtil.Active.GetMMF(file);
                             stream = mmf.CreateViewStream(file.DataOffset, file.PboDataSize, MemoryMappedFileAccess.Read);
                         }
                         finally
                         {
                             _lock.Release();
+
+                            _cancellationToken.ThrowIfCancellationRequested();
                         }
                     }
                     else
@@ -104,24 +118,30 @@ public class FileReaderUtil
             {
                 stream = new FileStream(file.SrcPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
-            
+
             if (stream is null)
             {
-                return Array.Empty<byte>();
+                return;
             }
+
+            _cancellationToken.ThrowIfCancellationRequested();
         }
+        catch (OperationCanceledException) { return; }
         catch (Exception ex)
         {
             Log.Warning("Error when opening stream for {path} {file}: {error}", path, file.Name, ex);
-            return Array.Empty<byte>();
+            return;
         }
         finally
         {
             mmf?.Dispose();
+            file._initalizing = false;
         }
 
         try
         {
+            _cancellationToken.ThrowIfCancellationRequested();
+
             // Get the output data.
             byte[] output = file.Extension switch
             {
@@ -129,21 +149,26 @@ public class FileReaderUtil
                 _ => (byte[])await ProcessDefaultAsync(stream),
             };
 
+            _cancellationToken.ThrowIfCancellationRequested();
+
             Log.Debug("Loaded {path} {file} with {size} bytes. Items remaining in queue: {remains}", 
                 path, file.Name, output.Length, _derapQueue.Count);
 
-            return output;
+            file._initalized = true;
+            file._fileData = output;
         }
+        catch (OperationCanceledException) { return; }
         catch (Exception ex)
         {
             Log.Warning("Error when processing {path} {file}: {error}", path, file.Name, ex);
-            return Array.Empty<byte>();
+            return;
         }
         finally
         {
             // Cleanup
             await stream.DisposeAsync();
             mmf?.Dispose();
+            file._initalizing = false;
         }
     }
 
@@ -151,8 +176,16 @@ public class FileReaderUtil
     {
         // Get the file data
         var fileData = new ParamFile(stream);
+
+        _cancellationToken.ThrowIfCancellationRequested();
+
         var fileString = fileData.ToString();
+
+        _cancellationToken.ThrowIfCancellationRequested();
+
         var data = Encoding.ASCII.GetBytes(fileString);
+
+        _cancellationToken.ThrowIfCancellationRequested();
 
         // Adjust the name
         file.ChangeExtension(".cpp");
@@ -162,10 +195,14 @@ public class FileReaderUtil
 
     private async Task<byte[]> ProcessDefaultAsync(Stream stream)
     {
+        _cancellationToken.ThrowIfCancellationRequested();
+
         List<byte> fileData = new();
         int readRes = -1;
         while (readRes != 0)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
+
             byte[] buffer = new byte[4 * 1024];
             readRes = await stream.ReadAsync(buffer, 0, buffer.Length);
 
@@ -176,21 +213,30 @@ public class FileReaderUtil
             }
         }
 
+        _cancellationToken.ThrowIfCancellationRequested();
+
         return fileData.ToArray();
     }
 
     private void StartIfNotStarted()
     {
+        _cancellationToken.ThrowIfCancellationRequested();
+
         if (!Running)
         {
-            if (_derapQueue.TryPeek(out _, out _))
+            if (_derapQueue.TryPeek(out _))
             {
+                _cancellationToken.ThrowIfCancellationRequested();
+
                 Running = true;
 
-                queueRunner = Task.Run(async () =>
+                queueRunner = new Task(async (state) =>
                 {
-                    while (_derapQueue.TryDequeue(out var next, out _))
+                    while (_derapQueue.TryDequeue(out var next))
                     {
+                        if (_cancellationToken.IsCancellationRequested)
+                            break;
+
                         if (next is null)
                             continue;
 
@@ -198,18 +244,7 @@ public class FileReaderUtil
                         while (_activeRunners.Count >= _maxRunners)
                             await Task.Delay(TimeSpan.FromSeconds(0.25));
 
-                        Guid id;
-                        do
-                        {
-                            id = Guid.NewGuid();
-                        } while (_activeRunners.ContainsKey(id));
-
-                        // Save to the active runners dict.
-                        (next.AsyncState as State)!.Key = id;
-                        _activeRunners[id] = next;
-
-                        // Start the task.
-                        next.Start();
+                        RunItem(next);
                     }
 
                     // Handle shutdown.
@@ -223,15 +258,40 @@ public class FileReaderUtil
                         Running = false;
                         queueRunner = null;
                     }
-                });
+                }, null, _cancellationToken, TaskCreationOptions.LongRunning);
+
+                queueRunner.Start();
             }
         }
+    }
+
+    private void RunItem(MemoryFile next)
+    {
+        Guid id;
+        do
+        {
+            id = Guid.NewGuid();
+        } while (_activeRunners.ContainsKey(id));
+
+        var task = new Task(async (x) =>
+        {
+            await ReadAndProcess(next);
+
+            _ = _activeRunners.TryRemove(id, out _);
+        }, id, _cancellationToken);
+
+        _activeRunners[id] = task;
+
+        // May have been cancelled already.
+        if (!task.IsCompleted)
+            // Start the task.
+            task.Start();
     }
 
     public async Task WaitForEmptyQueueAsync(CancellationToken? cancellation = null)
     {
         if (cancellation is null)
-            cancellation = new CancellationTokenSource().Token;
+            cancellation = _cancellationToken;
 
         cancellation.Value.ThrowIfCancellationRequested();
 
@@ -244,22 +304,15 @@ public class FileReaderUtil
             await Task.Delay(TimeSpan.FromSeconds(0.25), cancellation.Value);
     }
 
-    internal MemoryMappedFile GetMMF(MemoryFile file)
+    public void Dispose()
     {
-        MemoryMappedFile mmf;
-        var name = file.SrcPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
-        try
-        {
-            // TODO Make this platform compatable.
-#pragma warning disable CA1416 // Validate platform compatibility
-            mmf = MemoryMappedFile.OpenExisting(name);
-#pragma warning restore CA1416 // Validate platform compatibility
-        }
-        catch
-        {
-            mmf = MemoryMappedFile.CreateFromFile(file.SrcPath, FileMode.Open, name);
-        }
+        _cancelSource.Cancel();
+        _cancelSource.Dispose();
 
-        return mmf;
+        // We wont make new runners if this is true.
+        Running = true;
+        _derapQueue.Clear();
+        _activeRunners.Clear();
+        queueRunner = null;
     }
 }
