@@ -2,6 +2,9 @@
 
 using System.Collections.Concurrent;
 
+using VirtualMemoryProvider.Util;
+
+using VirtualPDrive.API.Extensions;
 using VirtualPDrive.API.Structures.VC;
 using VirtualPDrive.Client;
 
@@ -14,7 +17,7 @@ public class VirtualClientManager : IVirtualClientManager
     private readonly int _cacheTime = 30;
 
     private HashSet<string> DestroyFolders { get; set; } = new();
-    private ConcurrentDictionary<string, Uri> CurrentPaths { get; init; } = new();
+    private ConcurrentDictionary<string, string[]> CurrentPaths { get; init; } = new();
     private ConcurrentDictionary<string, VirtualClientContainer> Containers { get; init; } = new();
     private ConcurrentDictionary<VirtualClient, string> ClientLookup { get; init; } = new();
     private ConcurrentDictionary<string, Timer> ErrorCacheTimers { get; set; } = new();
@@ -22,38 +25,71 @@ public class VirtualClientManager : IVirtualClientManager
     public VirtualClientManager(IConfiguration configuration)
     {
         _configuration = configuration;
-        _cacheTime = _configuration.GetValue<int>("ClientErrorCacheTime", 30);
+        _cacheTime = _configuration.GetValue("ClientErrorCacheTime", 30);
     }
 
-    public VirtualClientContainer CreateVirtualClient(VirtualClientSettings settings, bool randomOutput, bool generatedRandomOutputFolder = false)
+    public VirtualClientContainer CreateVirtualClient(VirtualClientSettings settings, bool randomOutput, bool forceGenOutput, 
+        bool generatedRandomOutputFolder = false, int tests = 0)
     {
-        var client = new VirtualClient(settings);
+        VirtualClient? client = null;
+        string[]? clientPath = null;
 
-        var clientUri = new Uri(client.Settings.OutputPath);
-        foreach (var path in CurrentPaths.Values)
+        if (!forceGenOutput)
         {
-            if (clientUri.IsBaseOf(path))
+            client = new VirtualClient(settings);
+            clientPath = client.Settings.OutputPath.Split(Path.DirectorySeparatorChar);
+
+            if (tests > 5)
             {
-                if (randomOutput)
+                var dir = Path.GetDirectoryName(settings.OutputPath);
+                Log.Warning("Failed to generate a new non-child path in {path}", dir);
+                throw new Exception("Failed to generate a new non-child path in " + dir);
+            }
+
+            foreach (var path in CurrentPaths.Values)
+            {
+                if (clientPath.IsChildOfOrEqualTo(path))
                 {
-                    string newPath;
-                    do
+                    if (randomOutput)
                     {
-                        newPath = Path.GetRandomFileName();
-                    } while (Directory.Exists(newPath));
-
-                    Directory.CreateDirectory(newPath);
-                    settings.OutputPath = newPath;
-
-                    // We want to check the URI again just in case, but it should not be a problem.
-                    return CreateVirtualClient(settings, randomOutput, true);
-                }
-                else
-                {
-                    throw new Exception("The provided path is already a part of an existing virtual instance.");
+                        forceGenOutput = true;
+                        tests++;
+                    }
+                    else
+                    {
+                        throw new Exception("The provided path is already a part of an existing virtual instance.");
+                    }
                 }
             }
         }
+
+        if (forceGenOutput)
+        {
+            string newPath;
+            do
+            {
+                string prefix = "instances";
+#if DEBUG
+                prefix = Path.Combine("bin", prefix);
+#endif
+                newPath = Path.Combine(prefix, Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
+            } while (Directory.Exists(newPath));
+
+            Directory.CreateDirectory(newPath);
+            settings.OutputPath = newPath;
+
+            // We want to check the URI again just in case, but it should not be a problem.
+            return CreateVirtualClient(settings, randomOutput, false, true, tests);
+        }
+
+        if (client is null)
+        {
+            Log.Warning("Failed to create virtual client for {settings}", settings);
+            throw new Exception("No client was able to be created.");
+        }
+
+        if (clientPath is null)
+            clientPath = client.Settings.OutputPath.Split(Path.DirectorySeparatorChar);
 
         client.OnStart += Client_OnStart;
         client.OnShutdown += Client_OnShutdown;
@@ -73,7 +109,8 @@ public class VirtualClientManager : IVirtualClientManager
 
         Containers[key] = container;
         ClientLookup[client] = key;
-        CurrentPaths[key] = clientUri;
+        CurrentPaths[key] = clientPath;
+
         if (generatedRandomOutputFolder)
         {
             DestroyFolders.Add(key);
@@ -81,21 +118,18 @@ public class VirtualClientManager : IVirtualClientManager
             Log.Information("Created auto generated directory {path}", settings.OutputPath);
         }
 
-        _ = Task.Run(async () =>
+        try
         {
-            try
+            client.Start();
+        }
+        catch (Exception ex)
+        {
+            Task.Run(async () => await Client_OnError(client, new()
             {
-                await client.StartAsync();
-            }
-            catch (Exception ex)
-            {
-                await Client_OnError(client, new()
-                {
-                    Exception = ex,
-                    Message = ex.Message
-                });
-            }
-        });
+                Exception = ex,
+                Message = ex.Message
+            }));
+        }
 
         return container;
     }
@@ -108,15 +142,17 @@ public class VirtualClientManager : IVirtualClientManager
             {
                 _ = ClientLookup.TryRemove(container.Client, out _);
 
+                string path = container.Client.Settings.OutputPath;
+
+                container.Client.Dispose();
+
                 if (DestroyFolders.TryGetValue(id, out var actual))
                 {
                     DestroyFolders.Remove(actual);
-                    Directory.Delete(container.Client.Settings.OutputPath, true);
+                    Directory.Delete(path, true);
 
                     Log.Information("Deleted auto generated directory {path}", actual);
                 }
-
-                container.Client.Dispose();
             }
             else
             {
@@ -138,6 +174,13 @@ public class VirtualClientManager : IVirtualClientManager
 
             _ = ErrorCacheTimers.TryRemove(id, out _);
             _ = CurrentPaths.TryRemove(id, out _);
+
+            if (Containers.Count == 0
+                && MMFUtil.Active is not null)
+            {
+                MMFUtil.Active.Dispose();
+                MMFUtil.Active = null;
+            }
 
             return container;
         }
@@ -170,7 +213,8 @@ public class VirtualClientManager : IVirtualClientManager
     }
 
     #region Client Events
-    private async Task Client_OnStart(object sender, VirtualClientEventArgs args)
+
+    private async Task Client_OnStart(object sender)
     {
         await Task.Run(() =>
         {
@@ -198,6 +242,9 @@ public class VirtualClientManager : IVirtualClientManager
                     if (Containers.TryGetValue(key, out var container))
                     {
 #nullable disable
+                        container.Client.OnStart -= Client_OnStart;
+                        container.Client.OnError -= Client_OnError;
+                        container.Client.OnShutdown -= Client_OnShutdown;
                         container.Client.Dispose();
 
                         container.Client = null;
@@ -229,6 +276,9 @@ public class VirtualClientManager : IVirtualClientManager
                     if (Containers.TryGetValue(key, out var container))
                     {
 #nullable disable
+                        container.Client.OnStart -= Client_OnStart;
+                        container.Client.OnError -= Client_OnError;
+                        container.Client.OnShutdown -= Client_OnShutdown;
                         container.Client.Dispose();
 
                         container.Client = null;

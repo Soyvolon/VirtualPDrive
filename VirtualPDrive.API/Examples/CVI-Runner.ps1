@@ -18,13 +18,40 @@ $mods = @(
 
 $route = "http://localhost:9127"
 $arma = "D:\SteamLibrary\steamapps\common\Arma 3"
-$output = "D:\VirtualPDrive"
-$local = ""
+
 $noMods = $False
 
-if($noMods) {
-    & ".\Create-Virtual-Instance.ps1" $route $arma -nomods -output $output -local $local -Log -EnvVarName "VPD_VIRTUAL_INSTANCE_ID"
-} else {
-    $modsRaw = $mods -Join ", "
-    & ".\Create-Virtual-Instance.ps1" $route $arma -mods $modsRaw -output $output -local $local -Log -EnvVarName "VPD_VIRTUAL_INSTANCE_ID"
+$output = "D:\VirtualPDrive"
+$local = ""
+
+$extensions = @(
+    ".bin"
+)
+$whitelist = @(
+    "config.bin"
+)
+$Preload = $True
+$initRunners = 2
+$noClean = $False
+$randomOutput = $False
+
+$params = @{
+    "Route"=$route;
+    "Arma"=$Arma;
+    "Mods" = $Mods;
+    "NoMods" = $NoMods;
+    "Output" = $output;
+    "Local" = $Local;
+    "Extensions" = $Extensions;
+    "Whitelist" = $Whitelist;
+    "Preload" = $Preload;
+    "Runners" = $initRunners;
+    "Noclean" = $Noclean;
+    "RandomOutput" = $randomOutput;
+    "Log"=$true;
+    "EnvVarName"="VPD_VIRTUAL_INSTANCE_ID";
 }
+
+Write-Output $params
+
+& ".\Create-Virtual-Instance.ps1" @params

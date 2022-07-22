@@ -47,8 +47,6 @@ public class Program
     [Option("--init-runners", CommandOptionType.SingleValue, Description = "Set the ammount of initalize file instances that can run at one time.")]
     public int InitRunners { get; set; } = 2;
 
-    private CancellationTokenSource? CancellationToken { get; set; }
-
     private async Task OnExecute()
     {
         Log.Logger = new LoggerConfiguration()
@@ -74,13 +72,20 @@ public class Program
             InitRunners = InitRunners
         });
 
-        Console.CancelKeyPress += Console_CancelKeyPress;
         client.OnStart += Client_OnStart;
         client.OnShutdown += Client_OnShutdown;
 
-        await client.StartAsync();
+        client.Start();
 
-        await Task.Delay(-1);
+        var cancel = new CancellationTokenSource();
+
+        Console.CancelKeyPress += (x, y) =>
+        {
+            client.Dispose();
+            cancel.Cancel();
+        };
+
+        await Task.Delay(-1, cancel.Token);
     }
 
     private Task Client_OnShutdown(object sender)
@@ -91,17 +96,10 @@ public class Program
         return Task.CompletedTask;
     }
 
-    private Task Client_OnStart(object sender, VirtualClientEventArgs args)
+    private Task Client_OnStart(object sender)
     {
         Log.Information("Virtual client started.");
-        CancellationToken = args.ClientCancellationToken;
 
         return Task.CompletedTask;
-    }
-
-    private void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
-    {
-        if (CancellationToken is not null)
-            CancellationToken.Cancel(true);
     }
 }

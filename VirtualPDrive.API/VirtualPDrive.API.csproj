@@ -15,6 +15,10 @@
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
 	</ItemGroup>
 
+	<PropertyGroup>
+		<ServerGarbageCollection>false</ServerGarbageCollection>
+	</PropertyGroup>
+
 	<ItemGroup>
 	  <ProjectReference Include="..\VirtualPDrive\VirtualPDrive.csproj" />
 	</ItemGroup>

@@ -23,10 +23,15 @@ public class MemoryFile : IMemoryItem
     public int DataOffset { get; init; }
     public int PboDataSize { get; init; }
 
-    private byte[] _fileData = Array.Empty<byte>();
-    private bool _initalized = false;
+    internal byte[] _fileData = Array.Empty<byte>();
+    internal bool _initalized = false;
+    internal bool _initalizing = false;
 
-    public MemoryFile(FileEntry? entry, string? srcPath, bool allowRead, string name, string extension)
+    private FileReaderUtil _fileReader;
+
+    private bool disposed;
+
+    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string extension, FileReaderUtil fileReader)
     {
         SrcPath = srcPath ?? "";
         AllowRead = allowRead;
@@ -36,30 +41,55 @@ public class MemoryFile : IMemoryItem
 
         if (srcPath is null && entry is not null)
         {
-            SrcPath = entry.Parent.PBOFilePath;
-            DataOffset = entry.Parent.DataOffset + entry.StartOffset;
+            SrcPath = pboPath ?? "";
+            DataOffset = parentOffset + entry.StartOffset;
             PboDataSize = entry.DataSize;
             IsFromPBO = true;
         }
+
+        _fileReader = fileReader;
     }
 
-    internal Task InitalizeAsync(bool priority = false)
+    internal void Initalize(bool priority = false)
     {
-        if (!AllowRead || MemoryFileSystem.FileReader is null)
-            return Task.CompletedTask;
+        ThrowIfDisposed();
 
-        return MemoryFileSystem.FileReader.EnqueueAsync(this, priority, (x) =>
+        if (!AllowRead)
+            return;
+
+        _initalizing = true;
+        _fileReader.Enqueue(this, priority);
+    }
+
+    internal async Task<bool> WaitForInitAsync(bool priority = false)
+    {
+        ThrowIfDisposed();
+
+        if (_initalized)
+            return true;
+
+        if (!_initalizing)
+            Initalize(priority);
+
+        do
         {
-            _fileData = x;
-            _initalized = true;
-        });
+            await Task.Delay(TimeSpan.FromSeconds(0.25));
+        } while (_initalizing);
+
+        return _initalized;
     }
 
     public MemoryStream GetStream()
-        => new(_fileData);
+    {
+        ThrowIfDisposed();
+
+        return new(_fileData);
+    }
 
     public void ChangeExtension(string newExtension)
     {
+        ThrowIfDisposed();
+
         if (!newExtension.StartsWith('.'))
             newExtension = "." + newExtension;
 
@@ -69,6 +99,8 @@ public class MemoryFile : IMemoryItem
 
     public long GetSize()
     {
+        ThrowIfDisposed();
+
         // if we dont want to read this file, set this to 0.
         // Any open attempts will not call the API.
         if (!AllowRead)
@@ -85,11 +117,28 @@ public class MemoryFile : IMemoryItem
         return _fileData.Length;
     }
 
-    public MemoryStream GetDataStream()
+    public MemoryStream? GetDataStream()
     {
+        ThrowIfDisposed();
+
         if (!_initalized)
-            InitalizeAsync(true).Wait();
+        {
+            var res = WaitForInitAsync(true).GetAwaiter().GetResult();
+            if (!res)
+                return null;
+        }
 
         return new MemoryStream(_fileData);
+    }
+    private void ThrowIfDisposed()
+    {
+        if (disposed)
+            throw new ObjectDisposedException(nameof(MemoryFileSystem), "This memory file system is disposed.");
+    }
+
+    public void Dispose()
+    {
+        _fileData = null;
+        _fileReader = null;
     }
 }

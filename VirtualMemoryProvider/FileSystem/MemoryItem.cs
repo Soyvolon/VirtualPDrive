@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace MemoryFS.FileSystem;
-public interface IMemoryItem
+public interface IMemoryItem : IDisposable
 {
     public string Name { get; set; }
 }

@@ -16,18 +16,20 @@ if ($EnvVarName -ne "") {
 if ($idval -eq "") {
     Write-Error "No ID was provided to request destruction for."
     
-    return
+    exit 1
 }
 
 try {
     $res = Invoke-WebRequest -Uri "$Route/api/destroy/$idval" -Method "DELETE" -UseBasicParsing
 }
 catch {
-    Write-Output "Bad request returned from server - no instance to destroy."
-    return
+    Write-Output $_
+    exit 1
 }
 
 $obj = $res | ConvertFrom-Json
 
 Write-Output $obj
 Write-Output $obj.success
+
+exit 0

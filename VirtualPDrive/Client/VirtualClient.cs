@@ -13,10 +13,11 @@ using MemoryFS;
 namespace VirtualPDrive.Client;
 public class VirtualClient
 {
-    private bool disposedValue;
-
     #region Events
-    public delegate Task OnStartEventHandler(object sender, VirtualClientEventArgs args);
+    public delegate Task OnInitEventHandler(object sender);
+    public event OnInitEventHandler? OnInit;
+
+    public delegate Task OnStartEventHandler(object sender);
     public event OnStartEventHandler? OnStart;
 
     public delegate Task OnErrorEventHandler(object sender, VirtualClientErrorEventArgs args);
@@ -27,35 +28,68 @@ public class VirtualClient
     #endregion
 
     public VirtualClientSettings Settings { get; protected set; }
-    public CancellationTokenSource Cancellation { get; protected set; }
+
+    private MemoryProvider? Provider { get; set; }
+
+    private readonly CancellationTokenSource _cancellationSource;
+    private readonly CancellationToken _cancellationToken;
 
     public VirtualClient(VirtualClientSettings settings)
     {
         Settings = settings;
-        Cancellation = new CancellationTokenSource();
+
+        Settings.OutputPath = Path.Combine(Environment.CurrentDirectory, Settings.OutputPath);
+
+        _cancellationSource =  new CancellationTokenSource();
+        _cancellationToken = _cancellationSource.Token;
     }
 
-    public async Task StartAsync()
+    public void Start()
     {
-        var provider = Initalize();
+        Initalize();
 
-        if (provider is null)
+        if (Provider is null)
         {
             LogError("No provider was built for the virtual file system.");
             return;
         }
 
-        await ReadArmAPBOAsync(provider);
+        if (OnInit is not null)
+            _ = Task.Run(async () => await OnInit.Invoke(this));
+
+        var postInit = new Task(async (x) =>
+        {
+            try
+            {
+                await PostInit();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error occoured in Post Init: {err}", ex);
+                if (OnError is not null)
+                    await OnError.Invoke(this, new()
+                    {
+                        Exception = ex,
+                        Message = ex.Message
+                    });
+            }
+        }, null, _cancellationToken, TaskCreationOptions.LongRunning);
+        postInit.Start();
+    }
+
+    private async Task PostInit()
+    {
+        ReadArmAPBO();
 
         if (!string.IsNullOrWhiteSpace(Settings.Local))
         {
             Settings.Local = Path.Combine(Environment.CurrentDirectory, Settings.Local);
-            await LoadLocalFilesAsync(provider);
+            LoadLocalFiles();
         }
 
         Log.Information("Setup complete. Starting virtaul file server.");
 
-        if(!provider.StartVirtualization())
+        if (!Provider!.StartVirtualization())
         {
             LogError("Virtualization start failed. Another instance with the same" +
                 " output route may be running.");
@@ -66,7 +100,7 @@ public class VirtualClient
         {
             Log.Information("Preloading allowed files...");
 
-            await provider.MemorySystem.InitalizeFileSystemAsync();
+            await Provider.MemorySystem.InitalizeFileSystemAsync();
 
             Log.Information("File preloading complete.");
         }
@@ -74,30 +108,16 @@ public class VirtualClient
         Log.Information($"Virtual file server started at {Settings.OutputPath}");
 
         if (OnStart is not null)
-            await OnStart.Invoke(this, new(Cancellation));
-
-        // Keep this running until it is signaled to stop.
-        try
-        {
-            await Task.Delay(-1, Cancellation.Token);
-        }
-        catch { /* wait */ }
-
-        Log.Information("Closing file server.");
-
-        provider.Dispose();
-
-        if (OnShutdown is not null)
-            OnShutdown?.Invoke(this);
+            await OnStart.Invoke(this);
     }
 
-    private MemoryProvider? Initalize()
+    private void Initalize()
     {
         Settings.ArmAPath = Path.Combine(Environment.CurrentDirectory, Settings.ArmAPath);
         if (!Directory.Exists(Settings.ArmAPath))
         {
             LogError("ArmA directory not found.");
-            return null;
+            return;
         }
 
         string arma3path = Path.Combine(Settings.ArmAPath, "arma3.exe");
@@ -105,12 +125,10 @@ public class VirtualClient
         if (!File.Exists(arma3path))
         {
             LogError("Could not find amra3.exe");
-            return null;
+            return;
         }
 
         Log.Information("Found Arma 3 - Initalizing Runner");
-
-        Settings.OutputPath = Path.Combine(Environment.CurrentDirectory, Settings.OutputPath);
 
         if (!Directory.Exists(Settings.OutputPath))
         {
@@ -136,14 +154,12 @@ public class VirtualClient
             InitRunners = Settings.InitRunners,
         };
 
-        var provider = new MemoryProvider(options);
+        Provider = new MemoryProvider(options);
 
         Log.Information("Created virtual provider.");
-
-        return provider;
     }
 
-    private async Task ReadArmAPBOAsync(MemoryProvider provider)
+    private void ReadArmAPBO()
     {
         Log.Information("Starting ArmA 3 PBO read...");
 
@@ -193,12 +209,18 @@ public class VirtualClient
 
         foreach (var pboPath in pboPaths)
         {
-            await ReadPBO(pboPath, provider);
+            ReadPBO(pboPath);
         }
     }
 
-    private async Task ReadPBO(string pboPath, MemoryProvider provider)
+    private void ReadPBO(string pboPath)
     {
+        if (Provider is null)
+        {
+            Log.Error("No proivder is avalible to add PBOs to.");
+            return;
+        }
+
         var pbo = new PBO(pboPath);
         if (!string.IsNullOrWhiteSpace(pbo.Prefix))
         {
@@ -210,7 +232,7 @@ public class VirtualClient
                 {
                     var rootedPath = Path.Join(root, file.FileName);
 
-                    var res = provider.MemorySystem.AddFile(rootedPath, file);
+                    var res = Provider.MemorySystem.AddFile(rootedPath, file, pboPath: pbo.PBOFilePath, parentOffset: pbo.DataOffset);
 
                     if (res is null)
                     {
@@ -231,8 +253,14 @@ public class VirtualClient
         }
     }
 
-    private Task LoadLocalFilesAsync(MemoryProvider provider)
+    private void LoadLocalFiles()
     {
+        if (Provider is null)
+        {
+            Log.Error("No proivder is avalible to add local files to.");
+            return;
+        }
+
         Log.Information("Adding Settings.Local file system to virtual provider...");
 
         List<string> files = new();
@@ -250,12 +278,10 @@ public class VirtualClient
         foreach (var file in files)
         {
             var path = Path.GetRelativePath(Settings.Local!, file);
-            provider.MemorySystem.AddFile(path, null);
+            Provider.MemorySystem.AddFile(path, null);
         }
 
         Log.Information("...Added {count} Settings.Local files.", files.Count);
-
-        return Task.CompletedTask;
     }
 
     private void LogError(string msg, Exception? ex = null)
@@ -274,26 +300,32 @@ public class VirtualClient
         });
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                // TODO: dispose managed state (managed objects)
-                Cancellation.Cancel(true);
-            }
-
-            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-            // TODO: set large fields to null
-            disposedValue = true;
-        }
-    }
-
     public void Dispose()
     {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Log.Information("Closing file server.");
+
+        _cancellationSource.Cancel();
+        _cancellationSource.Dispose();
+
+        try
+        {
+            Provider?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Failed to stop the virtual provider {err}", ex);
+        }
+
+        OnInit = null;
+        OnStart = null;
+        OnError = null;
+        Provider = null;
+
+        Log.Information("File server closed.");
+
+        if (OnShutdown is not null)
+            OnShutdown?.Invoke(this);
+
+        OnShutdown = null;
     }
 }

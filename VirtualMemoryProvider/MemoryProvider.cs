@@ -32,7 +32,6 @@ namespace MemoryFS
         private NotificationCallbacks notificationCallbacks;
 
         private bool isSymlinkSupportAvailable;
-        private bool disposedValue;
 
         public MemoryProviderOptions Options { get; }
 
@@ -163,6 +162,9 @@ namespace MemoryFS
 
             // Open the file in the layer for read.
             using var fs = file.GetDataStream();
+
+            if (fs is null)
+                return HResult.Ok;
 
             long remainingDataLength = fs.Length;
             byte[] buffer = new byte[bufferSize];
@@ -645,25 +647,10 @@ namespace MemoryFS
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    virtualizationInstance.StopVirtualizing();
-                    MemorySystem.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            MemorySystem.Dispose();
+            virtualizationInstance.StopVirtualizing();
         }
     }
 }

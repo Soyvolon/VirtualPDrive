@@ -31,7 +31,7 @@ Example Call (PowerShell):
 1. Get the latest API from the [Releases](https://github.com/Soyvolon/VirtualPDrive/releases) page.
 2. Enable the Windows Projected File System on your machine. Information about how to do that can be found [here](https://github.com/Microsoft/Windows-classic-samples/tree/main/Samples/ProjectedFileSystem)
 3. Run the API Application - its now listening on `http://localhost:9127`. You can change that in the `appsettings.json` file.
-4. Make a request to the API - full documentation on the API can be found [here](https://documenter.getpostman.com/view/6009085/UzR1Jh6E#be08d7f6-ed5b-4581-a84c-2e6e1450ade3)
+4. Make a request to the API - full documentation on the API can be found [here](https://documenter.getpostman.com/view/6009085/UzR1M3cc)
 
 Example files are found in the `Examples` folder shipped with the API. You can also read about them [here](https://github.com/Soyvolon/VirtualPDrive/tree/development/VirtualPDrive.API/Examples)
 

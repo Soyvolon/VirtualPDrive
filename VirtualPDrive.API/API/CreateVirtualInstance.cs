@@ -140,12 +140,21 @@ public partial class VirtualInstanceController : ControllerBase
                 PreLoad = args.PreLoad,
                 PreloadWhitelist = args.Whitelist,
                 ReadableExtensions = args.Extensions
-            }, args.RandomOutput);
+            }, args.RandomOutput, string.IsNullOrWhiteSpace(args.Output));
+
+            if (container.Errored)
+            {
+                return BadRequest(new InvlaidCreateRequest()
+                {
+                    Messages = container.MessageStack.ToArray()
+                });
+            }
 
             return Accepted($"/api/instance/{container.Id}",
                 new CreateResponse()
                 {
                     InstanceId = container.Id,
+                    Path = container.Client.Settings.OutputPath,
                 });
         }
         catch (Exception ex)
