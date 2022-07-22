@@ -1,6 +1,6 @@
 ﻿using Serilog;
 
-using SwiftPbo;
+using BIS.PBO;
 
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using VirtualMemoryProvider;
+using MemoryFS;
 
 namespace VirtualPDrive.Client;
 public class VirtualClient
@@ -62,6 +62,15 @@ public class VirtualClient
             return;
         }
 
+        if (Settings.PreLoad)
+        {
+            Log.Information("Preloading allowed files...");
+
+            await provider.MemorySystem.InitalizeFileSystemAsync();
+
+            Log.Information("File preloading complete.");
+        }
+
         Log.Information($"Virtual file server started at {Settings.OutputPath}");
 
         if (OnStart is not null)
@@ -108,16 +117,28 @@ public class VirtualClient
             Log.Information($"Creating output directory at {Settings.OutputPath}.");
             Directory.CreateDirectory(Settings.OutputPath);
         }
+        else if (!Settings.NoClean)
+        {
+            Log.Information("Cleaning output directory");
+            Directory.Delete(Settings.OutputPath, true);
+            Directory.CreateDirectory(Settings.OutputPath);
+        }
 
         var options = new MemoryProviderOptions()
         {
             VirtRoot = Settings.OutputPath,
-            OutputRoot = Path.GetFileName(Settings.OutputPath)
+            OutputRoot = Path.GetFileName(Settings.OutputPath),
+            DenyDeletes = true,
+            EnableNotifications = false,
+
+            ReadableExtensions = Settings.ReadableExtensions,
+            PreloadWhitelist = Settings.PreloadWhitelist,
+            InitRunners = Settings.InitRunners,
         };
 
         var provider = new MemoryProvider(options);
 
-        Log.Information("Starting virtual provider.");
+        Log.Information("Created virtual provider.");
 
         return provider;
     }
@@ -168,7 +189,7 @@ public class VirtualClient
             pboPaths.AddRange(files);
         }
 
-        Log.Information($"Found {pboPaths.Count} PBOs to parse.");
+        Log.Information("Found {count} PBOs to parse.", pboPaths.Count);
 
         foreach (var pboPath in pboPaths)
         {
@@ -178,35 +199,35 @@ public class VirtualClient
 
     private async Task ReadPBO(string pboPath, MemoryProvider provider)
     {
-        var pbo = new PboArchive(pboPath);
-        if (!string.IsNullOrWhiteSpace(pbo.ProductEntry.Prefix))
+        var pbo = new PBO(pboPath);
+        if (!string.IsNullOrWhiteSpace(pbo.Prefix))
         {
-            foreach (var file in pbo.Files)
+            foreach (var file in pbo.FileEntries)
             {
-                var root = Path.Join(pbo.ProductEntry.Prefix, Path.GetDirectoryName(file.FileName) ?? "");
+                var root = Path.Join(pbo.Prefix, Path.GetDirectoryName(file.FileName) ?? "");
 
                 if (root is not null)
                 {
                     var rootedPath = Path.Join(root, file.FileName);
 
-                    var res = provider.MemorySystem.AddFile(rootedPath);
+                    var res = provider.MemorySystem.AddFile(rootedPath, file);
 
                     if (res is null)
                     {
-                        Log.Warning($"Failed to add file: {file.FileName}");
+                        Log.Warning("Failed to add file: {name}", file.FileName);
                     }
                 }
                 else
                 {
-                    Log.Warning($"No root was found for {file.FileName}");
+                    Log.Warning("No root was found for {name}", file.FileName);
                 }
             }
 
-            Log.Verbose("Parsed {prefix}", pbo.ProductEntry.Prefix);
+            Log.Debug("Parsed {prefix}", pbo.Prefix);
         }
         else
         {
-            Log.Warning($"No prefix was found for {pboPath}");
+            Log.Warning("No prefix was found for {pboPath}", pboPath);
         }
     }
 
@@ -229,10 +250,10 @@ public class VirtualClient
         foreach (var file in files)
         {
             var path = Path.GetRelativePath(Settings.Local!, file);
-            provider.MemorySystem.AddFile(path);
+            provider.MemorySystem.AddFile(path, null);
         }
 
-        Log.Information($"...Added {files.Count} Settings.Local files.");
+        Log.Information("...Added {count} Settings.Local files.", files.Count);
 
         return Task.CompletedTask;
     }

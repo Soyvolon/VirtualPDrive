@@ -4,7 +4,7 @@
 using Serilog;
 using System;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     public class Program
     {
