@@ -4,13 +4,17 @@
       "commandName": "Project",
       "commandLineArgs": "\"D:\\SteamLibrary\\steamapps\\common\\Arma 3\" -o \"output\" -m \"@212th Auxiliary Assets\" -m \"@3AS (Beta Test)\" -m \"@ace\" -m \"@CBA_A3\" -m \"@Last Force Project\" -m \"@Legion Studios Base - Stable\" -m \"@Just Like The Simulations - The Great War\" -m \"@Kobra Mod Pack - Main\" -m \"@Operation TREBUCHET\" -m \"@WebKnight Droids\" -m \"@327th Brokkrs Workshop\" -m \"@91st MRC - Auxilliary Mod\" -m \"@DBA CIS\" -m \"@DBA Core\" -m \"@DBA Republic\" -l \"dummy_files\""
     },
+    "VirtualPDrive-ReadNoPreload": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\SteamLibrary\\steamapps\\common\\Arma 3\" -o \"output\" -m \"@212th Auxiliary Assets\" -m \"@3AS (Beta Test)\" -m \"@ace\" -m \"@CBA_A3\" -m \"@Last Force Project\" -m \"@Legion Studios Base - Stable\" -m \"@Just Like The Simulations - The Great War\" -m \"@Kobra Mod Pack - Main\" -m \"@Operation TREBUCHET\" -m \"@WebKnight Droids\" -m \"@327th Brokkrs Workshop\" -m \"@91st MRC - Auxilliary Mod\" -m \"@DBA CIS\" -m \"@DBA Core\" -m \"@DBA Republic\" -l \"dummy_files\" --load-whitelist config.bin"
+    },
     "VirtualPDrive-Preload-64": {
       "commandName": "Project",
-      "commandLineArgs": "\"D:\\SteamLibrary\\steamapps\\common\\Arma 3\" -o \"output\" -m \"@212th Auxiliary Assets\" -m \"@3AS (Beta Test)\" -m \"@ace\" -m \"@CBA_A3\" -m \"@Last Force Project\" -m \"@Legion Studios Base - Stable\" -m \"@Just Like The Simulations - The Great War\" -m \"@Kobra Mod Pack - Main\" -m \"@Operation TREBUCHET\" -m \"@WebKnight Droids\" -m \"@327th Brokkrs Workshop\" -m \"@91st MRC - Auxilliary Mod\" -m \"@DBA CIS\" -m \"@DBA Core\" -m \"@DBA Republic\" -l \"dummy_files\" --preload --preload-whitelist config.bin --init-runners 64"
+      "commandLineArgs": "\"D:\\SteamLibrary\\steamapps\\common\\Arma 3\" -o \"output\" -m \"@212th Auxiliary Assets\" -m \"@3AS (Beta Test)\" -m \"@ace\" -m \"@CBA_A3\" -m \"@Last Force Project\" -m \"@Legion Studios Base - Stable\" -m \"@Just Like The Simulations - The Great War\" -m \"@Kobra Mod Pack - Main\" -m \"@Operation TREBUCHET\" -m \"@WebKnight Droids\" -m \"@327th Brokkrs Workshop\" -m \"@91st MRC - Auxilliary Mod\" -m \"@DBA CIS\" -m \"@DBA Core\" -m \"@DBA Republic\" -l \"dummy_files\" --load --preload-whitelist config.bin --init-runners 64"
     },
     "VirtualPDrive-Preload-4": {
       "commandName": "Project",
-      "commandLineArgs": "\"D:\\SteamLibrary\\steamapps\\common\\Arma 3\" -o \"output\" -m \"@212th Auxiliary Assets\" -m \"@3AS (Beta Test)\" -m \"@ace\" -m \"@CBA_A3\" -m \"@Last Force Project\" -m \"@Legion Studios Base - Stable\" -m \"@Just Like The Simulations - The Great War\" -m \"@Kobra Mod Pack - Main\" -m \"@Operation TREBUCHET\" -m \"@WebKnight Droids\" -m \"@327th Brokkrs Workshop\" -m \"@91st MRC - Auxilliary Mod\" -m \"@DBA CIS\" -m \"@DBA Core\" -m \"@DBA Republic\" -l \"dummy_files\" --preload --preload-whitelist config.bin --init-runners 4"
+      "commandLineArgs": "\"D:\\SteamLibrary\\steamapps\\common\\Arma 3\" -o \"output\" -m \"@212th Auxiliary Assets\" -m \"@3AS (Beta Test)\" -m \"@ace\" -m \"@CBA_A3\" -m \"@Last Force Project\" -m \"@Legion Studios Base - Stable\" -m \"@Just Like The Simulations - The Great War\" -m \"@Kobra Mod Pack - Main\" -m \"@Operation TREBUCHET\" -m \"@WebKnight Droids\" -m \"@327th Brokkrs Workshop\" -m \"@91st MRC - Auxilliary Mod\" -m \"@DBA CIS\" -m \"@DBA Core\" -m \"@DBA Republic\" -l \"dummy_files\" --load --preload-whitelist config.bin --init-runners 4"
     },
     "VirtualPDrive-NoMods": {
       "commandName": "Project",

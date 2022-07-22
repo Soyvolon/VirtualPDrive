@@ -14,17 +14,17 @@ A Virtual file system designed to make building ArmA 3 mods requre signifigantly
 | ----------- | ------------------------------- | -------------------------------------------- |
 | ArmA 3 Path | The path to your ArmA 3 folder. | `VirtualPDrive.Runner.exe '/path/to/ArmA 3'` |
 
-| Option | Long Option         | Description                                                             | Usage                                                                                      |
-| ------ | ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| -m     | --mod               | Add a mod to the parameters. Specify none to load all workshop mods.    | `VirtualPDrive.Runner.exe -m @ACE -m @CBA -m @Another_Cool_Mod`                            |
-| -o     | --output            | Output folder for ProjFS                                                | `VirtualPDrive.Runner.exe -o /arma3/pdrive`                                                |
-|        | --no-mods           | Forces the application to only load base arma and local files.          | `VirtualPDrive.Runner.exe --no-mods`                                                       |
-| -l     | --local             | A local directory to copy file names from into the virtual folder.      | `VirtualPDrive.Runner.exe --local /dummy_files`                                            |
-| -e     | --extension         | Add an extension to the allowed file read whitelist.                    | `VirtualPDrive.Runner.exe -e .sqf -e .bin`                                                 |
-|        | --preload-whitelist | Add a file to the allowed file read whitelist.                          | `VirtualPDrive.Runner.exe --preload-whitelist config.bin --preload-whitelist myScript.sqf` |
-| -p     | --preload           | Forces the runner to preload all whitelisted files before starting.     | `VirtualPDrive.Runner.exe --preload`                                                       |
-|        | --no-clean          | Skips the step that cleans the output folder before starting.           | `VirtualPDrive.Runner.exe --no-clean`                                                      |
-|        | --init-runners      | Set the number of concurrent file load operations are allowed to occur. | `VirtualPDrive.Runner.exe --init-runners 4`                                                |
+| Option | Long Option      | Description                                                             | Usage                                                                                      |
+| ------ | ---------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| -m     | --mod            | Add a mod to the parameters. Specify none to load all workshop mods.    | `VirtualPDrive.Runner.exe -m @ACE -m @CBA -m @Another_Cool_Mod`                            |
+| -o     | --output         | Output folder for ProjFS                                                | `VirtualPDrive.Runner.exe -o /arma3/pdrive`                                                |
+|        | --no-mods        | Forces the application to only load base arma and local files.          | `VirtualPDrive.Runner.exe --no-mods`                                                       |
+| -l     | --local          | A local directory to copy file names from into the virtual folder.      | `VirtualPDrive.Runner.exe --local /dummy_files`                                            |
+| -e     | --extension      | Add an extension to the allowed file read whitelist.                    | `VirtualPDrive.Runner.exe -e .sqf -e .bin`                                                 |
+|        | --load-whitelist | Add a file to the allowed file read whitelist.                          | `VirtualPDrive.Runner.exe --preload-whitelist config.bin --preload-whitelist myScript.sqf` |
+| -p     | --preload        | Forces the runner to preload all whitelisted files before starting.     | `VirtualPDrive.Runner.exe --preload`                                                       |
+|        | --no-clean       | Skips the step that cleans the output folder before starting.           | `VirtualPDrive.Runner.exe --no-clean`                                                      |
+|        | --init-runners   | Set the number of concurrent file load operations are allowed to occur. | `VirtualPDrive.Runner.exe --init-runners 4`                                                |
 
 Example Call (PowerShell):
 ```ps

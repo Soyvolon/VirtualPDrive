@@ -38,7 +38,7 @@ namespace MemoryFS
         public MemoryProvider(MemoryProviderOptions options)
         {
             this.scratchRoot = options.VirtRoot;
-            this.MemorySystem = new("", options.ReadableExtensions, options.PreloadWhitelist, options.InitRunners);
+            this.MemorySystem = new("", options.ReadableExtensions, options.Whitelist, options.InitRunners);
 
             this.Options = options;
 
@@ -193,14 +193,15 @@ namespace MemoryFS
         private bool FileOrDirectoryExistsInLayer(string path,
             [NotNullWhen(true)] out ProjectedFileInfo? fileInfo)
         {
+            var now = DateTime.Now;
             if (this.MemorySystem.TryGetFile(path, out var file))
             {
-                fileInfo = new(file.Name, path, file.GetSize(), false);
+                fileInfo = new(file.Name, path, file.GetSize(), false, now, now, now, now, FileAttributes.ReadOnly);
                 return true;
             }
             else if (this.MemorySystem.TryGetDirectory(path, out var dir))
             {
-                fileInfo = new(dir.Name, path, 0, true);
+                fileInfo = new(dir.Name, path, 0, true, now, now, now, now, FileAttributes.ReadOnly | FileAttributes.Directory);
                 return true;
             }
 

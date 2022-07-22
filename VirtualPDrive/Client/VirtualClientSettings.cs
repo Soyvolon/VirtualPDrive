@@ -14,7 +14,7 @@ namespace VirtualPDrive.Client
         public string OutputPath { get; set; } = "output";
         public string? Local { get; set; } = null;
         public string[] ReadableExtensions { get; set; } = Array.Empty<string>();
-        public string[] PreloadWhitelist { get; set; } = Array.Empty<string>();
+        public string[] Whitelist { get; set; } = Array.Empty<string>();
         public bool PreLoad { get; set; } = false;
         public int InitRunners { get; set; } = 2;
         public bool NoClean { get; set; } = false;

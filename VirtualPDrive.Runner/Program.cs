@@ -9,6 +9,10 @@ using MemoryFS;
 using VirtualPDrive.Client;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.ComponentModel;
+using System.Security.Principal;
+using System.Reflection;
 
 namespace VirtualPDrive.Runner;
 
@@ -16,7 +20,9 @@ namespace VirtualPDrive.Runner;
 public class Program
 {
     public static async Task Main(string[] args)
-            => await CommandLineApplication.ExecuteAsync<Program>(args);
+    {
+        await CommandLineApplication.ExecuteAsync<Program>(args);
+    }
 
     [Argument(0, Description = "ArmA 3 Path")]
     private string ArmAPath { get; set; } = "";
@@ -37,8 +43,8 @@ public class Program
     [Option("-e|--extension", CommandOptionType.MultipleValue, Description = "Allowed file extenions for file loading.")]
     private string[] Extensions { get; set; } = Array.Empty<string>();
 
-    [Option("--preload-whitelist", CommandOptionType.MultipleValue, Description = "Allowed file names for file laoding.")]
-    private string[] PreloadWhitelist { get; set; } = Array.Empty<string>();
+    [Option("--load-whitelist", CommandOptionType.MultipleValue, Description = "Allowed file names for file laoding.")]
+    private string[] Whitelist { get; set; } = Array.Empty<string>();
 
     [Option("-p|--preload", CommandOptionType.NoValue, Description = "Set to initalize all allowed file extensions on load.")]
     private bool PreLoad { get; set; } = false;
@@ -46,6 +52,8 @@ public class Program
     public bool NoClean { get; set; } = false;
     [Option("--init-runners", CommandOptionType.SingleValue, Description = "Set the ammount of initalize file instances that can run at one time.")]
     public int InitRunners { get; set; } = 2;
+
+    private VirtualClient? Client { get; set; }
 
     private async Task OnExecute()
     {
@@ -58,7 +66,7 @@ public class Program
 #endif
             .CreateLogger();
 
-        var client = new VirtualClient(new()
+        Client = new VirtualClient(new()
         {
             ArmAPath = ArmAPath,
             ModsFilter = ModsFilter,
@@ -66,22 +74,22 @@ public class Program
             OutputPath = OutputPath,
             Local = Local,
             ReadableExtensions = Extensions,
-            PreloadWhitelist = PreloadWhitelist,
+            Whitelist = Whitelist,
             PreLoad = PreLoad,
             NoClean = NoClean,
             InitRunners = InitRunners
         });
 
-        client.OnStart += Client_OnStart;
-        client.OnShutdown += Client_OnShutdown;
+        Client.OnStart += Client_OnStart;
+        Client.OnShutdown += Client_OnShutdown;
 
-        client.Start();
+        Client.Start();
 
         var cancel = new CancellationTokenSource();
 
         Console.CancelKeyPress += (x, y) =>
         {
-            client.Dispose();
+            Client.Dispose();
             cancel.Cancel();
         };
 

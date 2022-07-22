@@ -139,7 +139,15 @@ public class VirtualClient
         else if (!Settings.NoClean)
         {
             Log.Information("Cleaning output directory");
-            Directory.Delete(Settings.OutputPath, true);
+            try
+            {
+                Directory.Delete(Settings.OutputPath, true);
+            }
+            catch (Exception ex)
+            {
+                // Sometimes, things happen.
+                Log.Warning("Failed to fully clean output directory {ex}", ex);
+            }
             Directory.CreateDirectory(Settings.OutputPath);
         }
 
@@ -151,7 +159,7 @@ public class VirtualClient
             EnableNotifications = false,
 
             ReadableExtensions = Settings.ReadableExtensions,
-            PreloadWhitelist = Settings.PreloadWhitelist,
+            Whitelist = Settings.Whitelist,
             InitRunners = Settings.InitRunners,
         };
 
@@ -328,6 +336,15 @@ public class VirtualClient
         Provider = null;
 
         Log.Information("File server closed.");
+
+        try
+        {
+            Directory.Delete(Settings.OutputPath, true);
+        }
+        catch 
+        {
+            // Oh well we tried.
+        }
 
         if (OnShutdown is not null)
             OnShutdown?.Invoke(this);

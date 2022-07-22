@@ -138,7 +138,7 @@ public partial class VirtualInstanceController : ControllerBase
                 InitRunners = args.InitRunners,
                 NoClean = args.NoClean,
                 PreLoad = args.PreLoad,
-                PreloadWhitelist = args.Whitelist,
+                Whitelist = args.Whitelist,
                 ReadableExtensions = args.Extensions
             }, args.RandomOutput, string.IsNullOrWhiteSpace(args.Output));
 

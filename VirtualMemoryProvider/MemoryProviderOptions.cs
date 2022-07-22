@@ -12,7 +12,7 @@ namespace MemoryFS
 
         // Memory File System tools
         public string[] ReadableExtensions { get; set; } = Array.Empty<string>();
-        public string[] PreloadWhitelist { get; set; } = Array.Empty<string>();
+        public string[] Whitelist { get; set; } = Array.Empty<string>();
         public int InitRunners { get; set; } = 2;
     }
 }
