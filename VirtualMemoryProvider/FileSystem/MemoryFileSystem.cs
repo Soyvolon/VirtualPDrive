@@ -80,11 +80,8 @@ public class MemoryFileSystem : IDisposable
                 var ext = Path.GetExtension(path);
                 var name = Path.GetFileName(path);
 
-                bool read = true;
-                if (_readableExtensions.Count > 0)
-                    read = _readableExtensions.Contains(ext);
-                if (_whitelistName.Count > 0)
-                    read = _whitelistName.Contains(name);
+                bool read = _readableExtensions.Contains(ext) 
+                    || _whitelistName.Contains(name);
 
                 return dir.AddFile(entry, srcPath, pboPath, parentOffset, read, name, ext, FileReader);
             }

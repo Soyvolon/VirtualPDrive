@@ -1,3 +1,6 @@
+# This script will request the API to destory an existing
+# instance that matches the provided ID.
+
 param(
     [string]$Route = "",
 

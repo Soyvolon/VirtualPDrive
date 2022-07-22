@@ -1,3 +1,8 @@
+# This file is designed to communicate with an already existing
+# Virtual P Drive API application and spool up a new instance.
+# Keeping in mind CI, this script exits on error or after the
+# instance is fully loaded.
+
 param(
     [string]$Route,
 

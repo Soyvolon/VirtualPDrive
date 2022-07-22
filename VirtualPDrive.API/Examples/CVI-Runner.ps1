@@ -1,3 +1,7 @@
+# This file calls the Create-Virtual-Instance script. Its
+# intent is to make it simpler than trying to write all the
+# parameters in the command line.
+
 $mods = @(
     "@212th Auxiliary Assets",
     "@3AS (Beta Test)",
