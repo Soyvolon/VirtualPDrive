@@ -42,7 +42,11 @@ This sends a request to the API to destroy the instance that was created with cr
 ## `Boot-And-Create.ps1`
 This will launch the API - wait for a second - then run `CVI-Runner.ps1`. The API can be in any folder, but the script
 expects that `CVI-Runner.ps1` is in the same folder as itself. To change parameters for the virtual instance,
-edit `CIV-Runner.ps1`.
+edit `CIV-Runner.ps1`. 
+
+In the process of starting, Boot-And-Create checks to make sure ProjFS is enabled. If elevated,
+ProjFS will be enabled and the script will request you run it again. If not elevated, the script will launch in elevated mode,
+enable ProjFS, then continue to launching the API.
 
 | Param   | Required | Content                           | Example                                 |
 | ------- | -------- | --------------------------------- | --------------------------------------- |
