@@ -361,7 +361,8 @@ public class VirtualClient
         OnError = null;
         Provider = null;
 
-        CleanOutput();
+        if (!Settings.NoPurge)
+            CleanOutput();
 
         if (OnShutdown is not null)
             OnShutdown?.Invoke(this);

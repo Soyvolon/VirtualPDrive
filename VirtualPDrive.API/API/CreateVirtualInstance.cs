@@ -83,6 +83,11 @@ public partial class VirtualInstanceController : ControllerBase
         /// </summary>
         [DefaultValue(true)]
         public bool RandomOutput { get; set; } = false;
+        /// <summary>
+        /// If true, the file system wont clean the output folder after ending.
+        /// </summary>
+        [DefaultValue(false)]
+        public bool NoPurge { get; set; } = false;
     }
 
     /// <summary>

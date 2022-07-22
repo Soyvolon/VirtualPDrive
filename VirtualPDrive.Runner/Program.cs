@@ -52,6 +52,8 @@ public class Program
     public bool NoClean { get; set; } = false;
     [Option("--init-runners", CommandOptionType.SingleValue, Description = "Set the ammount of initalize file instances that can run at one time.")]
     public int InitRunners { get; set; } = 2;
+    [Option("--no-purge", CommandOptionType.NoValue, Description = "Set to prevent clearing of output folder after use.")]
+    public bool NoPurge { get; set; } = false;
 
     private VirtualClient? Client { get; set; }
 
@@ -77,7 +79,8 @@ public class Program
             Whitelist = Whitelist,
             PreLoad = PreLoad,
             NoClean = NoClean,
-            InitRunners = InitRunners
+            InitRunners = InitRunners,
+            NoPurge = NoPurge
         });
 
         Client.OnStart += Client_OnStart;

@@ -16,7 +16,6 @@ public class VirtualClientManager : IVirtualClientManager
 
     private readonly int _cacheTime = 30;
 
-    private HashSet<string> DestroyFolders { get; set; } = new();
     private ConcurrentDictionary<string, string[]> CurrentPaths { get; init; } = new();
     private ConcurrentDictionary<string, VirtualClientContainer> Containers { get; init; } = new();
     private ConcurrentDictionary<VirtualClient, string> ClientLookup { get; init; } = new();
@@ -113,9 +112,8 @@ public class VirtualClientManager : IVirtualClientManager
 
         if (generatedRandomOutputFolder)
         {
-            DestroyFolders.Add(key);
-
             Log.Information("Created auto generated directory {path}", settings.OutputPath);
+            settings.NoPurge = false;
         }
 
         try
@@ -142,34 +140,7 @@ public class VirtualClientManager : IVirtualClientManager
             {
                 _ = ClientLookup.TryRemove(container.Client, out _);
 
-                string path = container.Client.Settings.OutputPath;
-
                 container.Client.Dispose();
-
-                if (DestroyFolders.TryGetValue(id, out var actual))
-                {
-                    DestroyFolders.Remove(actual);
-                    Directory.Delete(path, true);
-
-                    Log.Information("Deleted auto generated directory {path}", actual);
-                }
-            }
-            else
-            {
-                if (DestroyFolders.TryGetValue(id, out var actual))
-                {
-                    DestroyFolders.Remove(actual);
-                    try
-                    {
-                        Directory.Delete(actual, true);
-
-                        Log.Information("Deleted auto generated directory {path}", actual);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning("Failed to delete auto generated directory {path}: {err}", actual, ex);
-                    }
-                }
             }
 
             _ = ErrorCacheTimers.TryRemove(id, out _);
