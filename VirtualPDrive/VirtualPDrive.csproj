@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SwiftPBO\SwiftPbo\SwiftPbo.csproj" />
     <ProjectReference Include="..\VirtualMemoryProvider\VirtualMemoryProvider.csproj" />
   </ItemGroup>
 

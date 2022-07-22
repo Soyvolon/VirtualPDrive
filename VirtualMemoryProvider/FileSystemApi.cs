@@ -8,7 +8,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     public sealed class FileSystemApi
     {

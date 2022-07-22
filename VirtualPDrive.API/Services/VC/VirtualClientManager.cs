@@ -11,11 +11,13 @@ public class VirtualClientManager : IVirtualClientManager
 {
     private readonly IConfiguration _configuration;
 
+    private readonly int _cacheTime = 30;
+
+    private HashSet<string> DestroyFolders { get; set; } = new();
+    private ConcurrentDictionary<string, Uri> CurrentPaths { get; init; } = new();
     private ConcurrentDictionary<string, VirtualClientContainer> Containers { get; init; } = new();
     private ConcurrentDictionary<VirtualClient, string> ClientLookup { get; init; } = new();
     private ConcurrentDictionary<string, Timer> ErrorCacheTimers { get; set; } = new();
-
-    private int _cacheTime = 30;
 
     public VirtualClientManager(IConfiguration configuration)
     {
@@ -23,9 +25,36 @@ public class VirtualClientManager : IVirtualClientManager
         _cacheTime = _configuration.GetValue<int>("ClientErrorCacheTime", 30);
     }
 
-    public VirtualClientContainer CreateVirtualClient(VirtualClientSettings settings)
+    public VirtualClientContainer CreateVirtualClient(VirtualClientSettings settings, bool randomOutput, bool generatedRandomOutputFolder = false)
     {
         var client = new VirtualClient(settings);
+
+        var clientUri = new Uri(client.Settings.OutputPath);
+        foreach (var path in CurrentPaths.Values)
+        {
+            if (clientUri.IsBaseOf(path))
+            {
+                if (randomOutput)
+                {
+                    string newPath;
+                    do
+                    {
+                        newPath = Path.GetRandomFileName();
+                    } while (Directory.Exists(newPath));
+
+                    Directory.CreateDirectory(newPath);
+                    settings.OutputPath = newPath;
+
+                    // We want to check the URI again just in case, but it should not be a problem.
+                    return CreateVirtualClient(settings, randomOutput, true);
+                }
+                else
+                {
+                    throw new Exception("The provided path is already a part of an existing virtual instance.");
+                }
+            }
+        }
+
         client.OnStart += Client_OnStart;
         client.OnShutdown += Client_OnShutdown;
         client.OnError += Client_OnError;
@@ -44,6 +73,13 @@ public class VirtualClientManager : IVirtualClientManager
 
         Containers[key] = container;
         ClientLookup[client] = key;
+        CurrentPaths[key] = clientUri;
+        if (generatedRandomOutputFolder)
+        {
+            DestroyFolders.Add(key);
+
+            Log.Information("Created auto generated directory {path}", settings.OutputPath);
+        }
 
         _ = Task.Run(async () =>
         {
@@ -72,10 +108,36 @@ public class VirtualClientManager : IVirtualClientManager
             {
                 _ = ClientLookup.TryRemove(container.Client, out _);
 
+                if (DestroyFolders.TryGetValue(id, out var actual))
+                {
+                    DestroyFolders.Remove(actual);
+                    Directory.Delete(container.Client.Settings.OutputPath, true);
+
+                    Log.Information("Deleted auto generated directory {path}", actual);
+                }
+
                 container.Client.Dispose();
+            }
+            else
+            {
+                if (DestroyFolders.TryGetValue(id, out var actual))
+                {
+                    DestroyFolders.Remove(actual);
+                    try
+                    {
+                        Directory.Delete(actual, true);
+
+                        Log.Information("Deleted auto generated directory {path}", actual);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("Failed to delete auto generated directory {path}: {err}", actual, ex);
+                    }
+                }
             }
 
             _ = ErrorCacheTimers.TryRemove(id, out _);
+            _ = CurrentPaths.TryRemove(id, out _);
 
             return container;
         }
@@ -146,6 +208,9 @@ public class VirtualClientManager : IVirtualClientManager
                         container.MessageStack.Push("Client gracefully shutdown.");
 
                         UpdateCache(key);
+
+                        // Remove from current paths now as the system is already stopped.
+                        _ = CurrentPaths.TryRemove(key, out _);
 #nullable enable
                     }
                 }
@@ -174,6 +239,9 @@ public class VirtualClientManager : IVirtualClientManager
                         container.MessageStack.Push(args.Message);
 
                         UpdateCache(key);
+
+                        // Remove from current paths now as the system is already stopped.
+                        _ = CurrentPaths.TryRemove(key, out _);
 #nullable enable
                         Log.Warning("Client {key} errored with {message}", key, args.Message);
                     }

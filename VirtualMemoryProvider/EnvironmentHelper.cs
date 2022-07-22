@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     public static class EnvironmentHelper
     {

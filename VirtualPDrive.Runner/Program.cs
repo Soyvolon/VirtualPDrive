@@ -4,9 +4,11 @@ using McMaster.Extensions.CommandLineUtils;
 
 using Serilog;
 
-using VirtualMemoryProvider;
+using MemoryFS;
 
 using VirtualPDrive.Client;
+using Microsoft.Win32;
+using System.Runtime.InteropServices;
 
 namespace VirtualPDrive.Runner;
 
@@ -32,6 +34,19 @@ public class Program
     [Option("-l|--local", CommandOptionType.SingleValue, Description = "Local file tree to insert into the output.")]
     private string? Local { get; set; } = null;
 
+    [Option("-e|--extension", CommandOptionType.MultipleValue, Description = "Allowed file extenions for file loading.")]
+    private string[] Extensions { get; set; } = Array.Empty<string>();
+
+    [Option("--preload-whitelist", CommandOptionType.MultipleValue, Description = "Allowed file names for file laoding.")]
+    private string[] PreloadWhitelist { get; set; } = Array.Empty<string>();
+
+    [Option("-p|--preload", CommandOptionType.NoValue, Description = "Set to initalize all allowed file extensions on load.")]
+    private bool PreLoad { get; set; } = false;
+    [Option("--no-clean", CommandOptionType.NoValue, Description = "Set to prevent clearing of output folder before use.")]
+    public bool NoClean { get; set; } = false;
+    [Option("--init-runners", CommandOptionType.SingleValue, Description = "Set the ammount of initalize file instances that can run at one time.")]
+    public int InitRunners { get; set; } = 2;
+
     private CancellationTokenSource? CancellationToken { get; set; }
 
     private async Task OnExecute()
@@ -51,7 +66,12 @@ public class Program
             ModsFilter = ModsFilter,
             NoMods = NoMods,
             OutputPath = OutputPath,
-            Local = Local
+            Local = Local,
+            ReadableExtensions = Extensions,
+            PreloadWhitelist = PreloadWhitelist,
+            PreLoad = PreLoad,
+            NoClean = NoClean,
+            InitRunners = InitRunners
         });
 
         Console.CancelKeyPress += Console_CancelKeyPress;

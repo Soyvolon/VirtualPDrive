@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     public class ProjectedFileInfo
     {

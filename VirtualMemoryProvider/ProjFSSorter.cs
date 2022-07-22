@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Windows.ProjFS;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     /// <summary>
     /// Implements IComparer using <see cref="Microsoft.Windows.ProjFS.Utils.FileNameCompare(string, string)"/>.
