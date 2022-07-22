@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using MemoryFS;
+using VirtualMemoryProvider.Util;
 
 namespace VirtualPDrive.Client;
 public class VirtualClient
@@ -230,7 +231,12 @@ public class VirtualClient
 
                 if (root is not null)
                 {
-                    var rootedPath = Path.Join(root, file.FileName);
+#if DEBUG
+                    // Places for debugging.
+                    if (root.StartsWith("ls_animation"))
+                    { }
+#endif
+                    var rootedPath = file.FileName.CombineWithPrefix(root);
 
                     var res = Provider.MemorySystem.AddFile(rootedPath, file, pboPath: pbo.PBOFilePath, parentOffset: pbo.DataOffset);
 

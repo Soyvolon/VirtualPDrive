@@ -71,6 +71,12 @@ public class MemoryFileSystem : IDisposable
     {
         ThrowIfDisposed();
 
+#if DEBUG
+        // Places for debugging.
+        if (path.StartsWith("ls_animation")) 
+        { }
+#endif
+
         var dirName = Path.GetDirectoryName(path);
         if (dirName is not null)
         {
