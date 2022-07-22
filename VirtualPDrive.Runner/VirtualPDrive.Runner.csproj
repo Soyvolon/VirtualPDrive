@@ -31,6 +31,12 @@
     <None Update="dummy_files\level_w\winging_this_project.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Examples\Create-Virtual-Instance.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Examples\CVI-Runner.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 	
 	<Target Name="PackRelease" AfterTargets="Publish">

@@ -55,6 +55,34 @@ public partial class VirtualInstanceController : ControllerBase
         /// </summary>
         [DefaultValue(null)]
         public string? Local { get; set; } = null;
+        /// <summary>
+        /// An array of file extensions that are allowed to be initalized for file loading.
+        /// </summary>
+        public string[] Extensions { get; set; } = Array.Empty<string>();
+        /// <summary>
+        /// A whitelist of file names that are allowed to be initalized for file loading.
+        /// </summary>
+        public string[] Whitelist { get; set; } = Array.Empty<string>();
+        /// <summary>
+        /// If ture, the file system will preload all allowed files/extensions before starting.
+        /// </summary>
+        [DefaultValue(false)]
+        public bool PreLoad { get; set; } = false;
+        /// <summary>
+        /// The ammount of concurent initalize operations that can occour at once.
+        /// </summary>
+        [DefaultValue(2)]
+        public int InitRunners { get; set; } = 2;
+        /// <summary>
+        /// If true, the file system wont clean the output folder before starting.
+        /// </summary>
+        [DefaultValue(false)]
+        public bool NoClean { get; set; } = false;
+        /// <summary>
+        /// Generate a random output folder if the requested one is not avalible.
+        /// </summary>
+        [DefaultValue(true)]
+        public bool RandomOutput { get; set; } = false;
     }
 
     /// <summary>
@@ -67,6 +95,23 @@ public partial class VirtualInstanceController : ControllerBase
         /// </summary>
         [Required]
         public string InstanceId { get; set; }
+        /// <summary>
+        /// The path where the API created a virtual instance.
+        /// </summary>
+        [Required]
+        public string Path { get; set; }
+    }
+
+    /// <summary>
+    /// Response when a bad request to create an instance was sent.
+    /// </summary>
+    public class InvlaidCreateRequest
+    {
+        /// <summary>
+        /// The messages returned from the creation request.
+        /// </summary>
+        [Required]
+        public string[] Messages { get; set; }
     }
 
     /// <summary>
@@ -77,22 +122,47 @@ public partial class VirtualInstanceController : ControllerBase
     /// <response code="202">Returns the ID of the virtual instace that was attempted to be created.</response>
     [HttpPost("create", Name = "CreateInstance")]
     [ProducesResponseType(StatusCodes.Status202Accepted, Type = typeof(CreateResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(InvlaidCreateRequest))]
     [Produces("application/json")]
     public IActionResult CreateInstance(CreateRequest args)
     {
-        var container = _virtualClientManager.CreateVirtualClient(new()
+        try
         {
-            ArmAPath = args.Arma,
-            ModsFilter = args.Mods,
-            NoMods = args.NoMods,
-            OutputPath = args.Output,
-            Local = args.Local
-        });
-
-        return Accepted($"/api/instance/{container.Id}", 
-            new CreateResponse()
+            var container = _virtualClientManager.CreateVirtualClient(new()
             {
-                InstanceId = container.Id,
+                ArmAPath = args.Arma,
+                ModsFilter = args.Mods,
+                NoMods = args.NoMods,
+                OutputPath = args.Output,
+                Local = args.Local,
+                InitRunners = args.InitRunners,
+                NoClean = args.NoClean,
+                PreLoad = args.PreLoad,
+                PreloadWhitelist = args.Whitelist,
+                ReadableExtensions = args.Extensions
+            }, args.RandomOutput, string.IsNullOrWhiteSpace(args.Output));
+
+            if (container.Errored)
+            {
+                return BadRequest(new InvlaidCreateRequest()
+                {
+                    Messages = container.MessageStack.ToArray()
+                });
+            }
+
+            return Accepted($"/api/instance/{container.Id}",
+                new CreateResponse()
+                {
+                    InstanceId = container.Id,
+                    Path = container.Client.Settings.OutputPath,
+                });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new InvlaidCreateRequest()
+            {
+                Messages = new string[] { ex.Message, "Failed to create a new instance." }
             });
+        }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\bis-file-formats\BIS.PBO\BIS.PBO.csproj" />
     <ProjectReference Include="..\ProjectedFSLib.Managed.API\NetFramework\ProjectedFSLib.Managed.vcxproj" />
   </ItemGroup>
 

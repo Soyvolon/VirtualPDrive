@@ -10,9 +10,9 @@ using System.IO;
 using System.Threading;
 using Microsoft.Windows.ProjFS;
 using System.Diagnostics.CodeAnalysis;
-using VirtualMemoryProvider.FileSystem;
+using MemoryFS.FileSystem;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     /// <summary>
     /// This is a simple file system "reflector" provider.  It projects files and directories from
@@ -32,14 +32,13 @@ namespace VirtualMemoryProvider
         private NotificationCallbacks notificationCallbacks;
 
         private bool isSymlinkSupportAvailable;
-        private bool disposedValue;
 
         public MemoryProviderOptions Options { get; }
 
         public MemoryProvider(MemoryProviderOptions options)
         {
             this.scratchRoot = options.VirtRoot;
-            this.MemorySystem = new("");
+            this.MemorySystem = new("", options.ReadableExtensions, options.PreloadWhitelist, options.InitRunners);
 
             this.Options = options;
 
@@ -156,34 +155,36 @@ namespace VirtualMemoryProvider
         protected HResult HydrateFile(string relativePath, uint bufferSize, Func<byte[], uint, bool> tryWriteBytes)
         {
             string layerPath = this.GetFullPathInLayer(relativePath);
-            if (!File.Exists(layerPath))
+            if (!MemorySystem.TryGetFile(layerPath, out var file))
             {
                 return HResult.FileNotFound;
             }
 
             // Open the file in the layer for read.
-            using (FileStream fs = new FileStream(layerPath, FileMode.Open, FileAccess.Read))
+            using var fs = file.GetDataStream();
+
+            if (fs is null)
+                return HResult.Ok;
+
+            long remainingDataLength = fs.Length;
+            byte[] buffer = new byte[bufferSize];
+
+            while (remainingDataLength > 0)
             {
-                long remainingDataLength = fs.Length;
-                byte[] buffer = new byte[bufferSize];
-
-                while (remainingDataLength > 0)
+                // Read from the file into the read buffer.
+                int bytesToCopy = (int)Math.Min(remainingDataLength, buffer.Length);
+                if (fs.Read(buffer, 0, bytesToCopy) != bytesToCopy)
                 {
-                    // Read from the file into the read buffer.
-                    int bytesToCopy = (int)Math.Min(remainingDataLength, buffer.Length);
-                    if (fs.Read(buffer, 0, bytesToCopy) != bytesToCopy)
-                    {
-                        return HResult.InternalError;
-                    }
-
-                    // Write the bytes we just read into the scratch.
-                    if (!tryWriteBytes(buffer, (uint)bytesToCopy))
-                    {
-                        return HResult.InternalError;
-                    }
-
-                    remainingDataLength -= bytesToCopy;
+                    return HResult.InternalError;
                 }
+
+                // Write the bytes we just read into the scratch.
+                if (!tryWriteBytes(buffer, (uint)bytesToCopy))
+                {
+                    return HResult.InternalError;
+                }
+
+                remainingDataLength -= bytesToCopy;
             }
 
             return HResult.Ok;
@@ -194,7 +195,7 @@ namespace VirtualMemoryProvider
         {
             if (this.MemorySystem.TryGetFile(path, out var file))
             {
-                fileInfo = new(file.Name, path, 0, false);
+                fileInfo = new(file.Name, path, file.GetSize(), false);
                 return true;
             }
             else if (this.MemorySystem.TryGetDirectory(path, out var dir))
@@ -646,25 +647,10 @@ namespace VirtualMemoryProvider
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    virtualizationInstance.StopVirtualizing();
-                    MemorySystem.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            MemorySystem.Dispose();
+            virtualizationInstance.StopVirtualizing();
         }
     }
 }

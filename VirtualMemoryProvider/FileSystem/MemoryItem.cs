@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VirtualMemoryProvider.FileSystem;
-public class MemoryItem
+namespace MemoryFS.FileSystem;
+public interface IMemoryItem : IDisposable
 {
     public string Name { get; set; }
 }

@@ -16,7 +16,12 @@ $mods = @(
     "@DBA Republic"
 )
 
-$route = "http://localhost:9127"
+# On publish
+# $ExePath = "..\VirtualPDrive.Runner.exe"
+
+# In Source
+$ExePath = "..\bin\Debug\net6.0\VirtualPDrive.Runner.exe"
+
 $arma = "D:\SteamLibrary\steamapps\common\Arma 3"
 
 $noMods = $False
@@ -30,13 +35,13 @@ $extensions = @(
 $whitelist = @(
     "config.bin"
 )
+
 $Preload = $True
-$initRunners = 2
 $noClean = $False
-$randomOutput = $False
+$initRunners = 2
 
 $params = @{
-    "Route"=$route;
+    "ExePath"=$ExePath;
     "Arma"=$Arma;
     "Mods" = $Mods;
     "NoMods" = $NoMods;
@@ -47,11 +52,9 @@ $params = @{
     "Preload" = $Preload;
     "Runners" = $initRunners;
     "Noclean" = $Noclean;
-    "RandomOutput" = $randomOutput;
     "Log"=$true;
-    "EnvVarName"="VPD_VIRTUAL_INSTANCE_ID";
 }
 
 Write-Output $params
 
-& ".\Create-Virtual-Instance.ps1" @params
+& ".\Launch-VPD.ps1" @params

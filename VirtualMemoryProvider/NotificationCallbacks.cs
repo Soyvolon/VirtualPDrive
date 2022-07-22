@@ -6,7 +6,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 
-namespace VirtualMemoryProvider
+namespace MemoryFS
 {
     class NotificationCallbacks
     {

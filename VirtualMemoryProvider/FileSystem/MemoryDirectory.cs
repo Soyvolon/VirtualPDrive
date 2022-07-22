@@ -1,13 +1,18 @@
-﻿using System;
+﻿using BIS.PBO;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VirtualMemoryProvider.FileSystem;
-public class MemoryDirectory : MemoryItem
+using VirtualMemoryProvider.Util;
+
+namespace MemoryFS.FileSystem;
+public class MemoryDirectory : IMemoryItem
 {
+    public string Name { get; set; }
     public List<MemoryDirectory> Directories { get; set; } = new();
     public HashSet<MemoryFile> Files { get; set; } = new();
 
@@ -16,7 +21,7 @@ public class MemoryDirectory : MemoryItem
         Name = name;
     }
 
-    public IEnumerable<MemoryItem> GetEntries()
+    public IEnumerable<IMemoryItem> GetEntries()
     {
         foreach (var dir in Directories)
             yield return dir;
@@ -60,9 +65,9 @@ public class MemoryDirectory : MemoryItem
         return false;
     }
 
-    public MemoryFile AddFile(string name, string extension)
+    public MemoryFile AddFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string ext, FileReaderUtil fileReader)
     {
-        var file = new MemoryFile(name, extension);
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, allowRead, name, ext, fileReader);
         if(!Files.Add(file))
         {
             if(Files.TryGetValue(file, out var actual))
@@ -87,5 +92,29 @@ public class MemoryDirectory : MemoryItem
         Directories.Add(dir);
 
         return dir;
+    }
+
+    internal async Task InitalizeDirectory(bool wait)
+    {
+        foreach (var file in Files)
+            file.Initalize();
+
+        if (wait)
+        {
+            foreach (var file in Files)
+                await file.WaitForInitAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        foreach (var file in Files)
+            file.Dispose();
+
+        foreach (var dir in Directories)
+            dir.Dispose();
+
+        Files = null;
+        Directories = null;
     }
 }
