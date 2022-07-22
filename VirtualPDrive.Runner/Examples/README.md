@@ -21,6 +21,7 @@ This will create a new virtual instance. Instance logs are printed to `stdout`.
 | Preload    | False    | Set if you want the instance to preload whitelisted files before starting.         | `-Preload`                               |
 | Runners    | False    | Set to change the amount of concurrent load operations can happen.                 | `-Preload`                               |
 | No Clean   | False    | Setting this will prevent the app from cleaning the output folder before starting. | `-Noclean`                               |
+| No Purge   | False    | Setting this will prevent the app from cleaning the output folder after ending.    | `-NoPurge`                               |
 | Log        | False    | Enables powershell logging.                                                        | `-Log`                                   |
 
 ## `LVPD-Runner.ps1`

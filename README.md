@@ -25,6 +25,7 @@ A Virtual file system designed to make building ArmA 3 mods requre signifigantly
 | -p     | --preload        | Forces the runner to preload all whitelisted files before starting.     | `VirtualPDrive.Runner.exe --preload`                                                       |
 |        | --no-clean       | Skips the step that cleans the output folder before starting.           | `VirtualPDrive.Runner.exe --no-clean`                                                      |
 |        | --init-runners   | Set the number of concurrent file load operations are allowed to occur. | `VirtualPDrive.Runner.exe --init-runners 4`                                                |
+|        | --no-purge       | Skips the step that cleans the output folder after ending.              | `VirtualPDrive.Runner.exe --no-purge`                                                      |
 
 Example Call (PowerShell):
 ```ps

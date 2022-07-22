@@ -38,6 +38,7 @@ $Preload = $True
 $initRunners = 2
 $noClean = $False
 $randomOutput = $False
+$noPurge = $False
 
 $params = @{
     "Route"=$route;
@@ -52,6 +53,7 @@ $params = @{
     "Runners" = $initRunners;
     "Noclean" = $Noclean;
     "RandomOutput" = $randomOutput;
+    "NoPurge" = $noPurge;
     "Log"=$true;
     "EnvVarName"="VPD_VIRTUAL_INSTANCE_ID";
 }

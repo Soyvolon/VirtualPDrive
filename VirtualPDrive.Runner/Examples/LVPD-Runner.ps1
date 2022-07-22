@@ -38,6 +38,7 @@ $whitelist = @(
 
 $Preload = $True
 $noClean = $False
+$noPurge = $False
 $initRunners = 2
 
 $params = @{
@@ -52,6 +53,7 @@ $params = @{
     "Preload" = $Preload;
     "Runners" = $initRunners;
     "Noclean" = $Noclean;
+    "NoPurge" = $noPurge;
     "Log"=$true;
 }
 

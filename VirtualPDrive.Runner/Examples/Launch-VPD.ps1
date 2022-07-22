@@ -31,6 +31,9 @@ param(
     [switch]$Noclean = $false,
 
     [Parameter(Mandatory=$False)]
+    [switch]$NoPurge = $False,
+
+    [Parameter(Mandatory=$False)]
     [switch]$Log = $false
 )
 
@@ -45,6 +48,7 @@ if($Log) {
     Write-Output "Preload: $Preload"
     Write-Output "Runners: $Runners"
     Write-Output "No Clean: $Noclean"
+    Write-Output "No Purge: $NoPurge"
 }
 
 try {
@@ -92,6 +96,10 @@ try {
 
     if ($Preload) {
         $params += "--preload"
+    }
+
+    if ($NoPurge) {
+        $params += "--no-purge"
     }
 
     if ($Log) {

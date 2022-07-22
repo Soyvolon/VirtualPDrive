@@ -39,6 +39,9 @@ param(
     [switch]$RandomOutput = $false,
 
     [Parameter(Mandatory=$False)]
+    [switch]$NoPurge = $False,
+
+    [Parameter(Mandatory=$False)]
     [switch]$Log = $false,
 
     [Parameter(Mandatory=$False)]
@@ -58,6 +61,7 @@ if($Log) {
     Write-Output "Runners: $Runners"
     Write-Output "No Clean: $Noclean"
     Write-Output "Random Output: $RandomOutput"
+    Write-Output "No Purge: $NoPurge"
 }
 
 $body = @"
@@ -72,7 +76,8 @@ $body = @"
     "preLoad": $($Preload.ToString().ToLower()),
     "initRunners": $Runners,
     "noClean": $($Noclean.ToString().ToLower()),
-    "randomOutput": $($RandomOutput.ToString().ToLower())
+    "randomOutput": $($RandomOutput.ToString().ToLower()),
+    "noPurge": $($NoPurge.ToString().ToLower())
 }
 "@
 

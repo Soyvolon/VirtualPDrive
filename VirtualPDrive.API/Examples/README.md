@@ -19,6 +19,7 @@ This will create a new virtual instance and wait for the instance to be ready be
 | Runners       | False    | Set to change the amount of concurrent load operations can happen.                           | `-Preload`                               |
 | No Clean      | False    | Setting this will prevent the app from cleaning the output folder before starting.           | `-Noclean`                               |
 | Random Output | False    | Setting this will generate a random output if the provided output is not free (or is blank). | `-RandomOutput`                          |
+| No Purge   | False    | Setting this will prevent the app from cleaning the output folder after ending.    | `-NoPurge`                               |
 | Log           | False    | Enables powershell logging.                                                                  | `-Log`                                   |
 | EnvVarName    | False    | Name of the env var to save the instance ID to.                                              | `-EnvVarName ENV_VAR_NAME`               |
 
