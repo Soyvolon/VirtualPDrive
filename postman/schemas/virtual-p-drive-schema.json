@@ -231,13 +231,18 @@
       },
       "CreateResponse": {
         "required": [
-          "instanceId"
+          "instanceId",
+          "path"
         ],
         "type": "object",
         "properties": {
           "instanceId": {
             "type": "string",
             "description": "The ID of the newly created instance."
+          },
+          "path": {
+            "type": "string",
+            "description": "The path where the API created a virtual instance."
           }
         },
         "additionalProperties": false,
