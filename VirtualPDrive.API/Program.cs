@@ -11,16 +11,16 @@ public class Program
 {
     public static int Main(string[] args)
     {
-        Log.Logger = new LoggerConfiguration()
+        var cfg = new ConfigurationBuilder()
 #if DEBUG
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .MinimumLevel.Debug()
+            .AddJsonFile("appsettings.Development.json")
 #else
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-            .MinimumLevel.Information()
+            .AddJsonFile("appsettings.json")
 #endif
-            .Enrich.FromLogContext()
-            .WriteTo.Console()
+            .Build();
+
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(cfg)
             .CreateLogger();
 
         try
@@ -32,6 +32,7 @@ public class Program
         catch (Exception ex)
         {
             Log.Fatal(ex, "Host terminated unexpectedly");
+            File.WriteAllText("api-error.log", ex.ToString());
             return 1;
         }
         finally
@@ -46,5 +47,6 @@ public class Program
             .ConfigureWebHostDefaults(builder =>
             {
                 builder.UseStartup<Startup>();
-            });
+            })
+            .UseWindowsService();
 }
