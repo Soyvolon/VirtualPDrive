@@ -45,7 +45,10 @@ param(
     [switch]$Log = $false,
 
     [Parameter(Mandatory=$False)]
-    [string]$EnvVarName = ""
+    [string]$EnvVarName = "",
+
+    [Parameter(Mandatory=$False)] # requires EnvVarName
+    [switch]$CreateIfNotCreated = $False
 )
 
 if($Log) {
@@ -64,7 +67,19 @@ if($Log) {
     Write-Output "No Purge: $NoPurge"
 }
 
-$body = @"
+$id = $null
+$skip = $False
+if ($CreateIfNotCreated) {
+    $id = (Get-Item "Env:$EnvVarName").Value;
+    if ($id -ne "") {
+        $skip = $True
+    }
+}
+
+$body = ""
+
+if (!$skip) {
+    $body = @"
 {
     "arma": "$($arma.Replace("\", "\\"))",
     "mods": ["$(($mods -Split ", ") -Join '", "')"],
@@ -81,16 +96,20 @@ $body = @"
 }
 "@
 
-if($Log) {
-    Write-Output $body
-}
-try {
-    $res = Invoke-WebRequest -Uri "$route/api/create" -ContentType "application/json" -Body $body -Method "POST" -UseBasicParsing
-    $id = ($res | ConvertFrom-Json).instanceId
-
     if($Log) {
-        Write-Output $res
-        Write-Output $id
+        Write-Output $body
+    }
+}
+
+try {
+    if (!$skip) {
+        $res = Invoke-WebRequest -Uri "$route/api/create" -ContentType "application/json" -Body $body -Method "POST" -UseBasicParsing
+        $id = ($res | ConvertFrom-Json).instanceId
+
+        if($Log) {
+            Write-Output $res
+            Write-Output $id
+        }
     }
 
     while ($true) {

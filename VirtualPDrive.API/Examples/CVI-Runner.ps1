@@ -28,9 +28,7 @@ $noMods = $False
 $output = "D:\VirtualPDrive"
 $local = ""
 
-$extensions = @(
-    ".bin"
-)
+$extensions = @()
 $whitelist = @(
     "config.bin"
 )
@@ -56,6 +54,7 @@ $params = @{
     "NoPurge" = $noPurge;
     "Log"=$true;
     "EnvVarName"="VPD_VIRTUAL_INSTANCE_ID";
+    "CreateIfNotCreated"=$True;
 }
 
 Write-Output $params

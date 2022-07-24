@@ -7,7 +7,7 @@ try {
     Write-Output "Starting compression of $Dir"
 
     $date = Get-Date -Format yyyy-MM-dd_hh-mm-ss
-    $file = "$Prefix-$date.7z"
+    $file = "$Prefix-$date.zip"
 
     Write-Output "Output file will be $file"
 
