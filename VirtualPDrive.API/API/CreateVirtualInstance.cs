@@ -74,20 +74,10 @@ public partial class VirtualInstanceController : ControllerBase
         [DefaultValue(2)]
         public int InitRunners { get; set; } = 2;
         /// <summary>
-        /// If true, the file system wont clean the output folder before starting.
-        /// </summary>
-        [DefaultValue(false)]
-        public bool NoClean { get; set; } = false;
-        /// <summary>
         /// Generate a random output folder if the requested one is not avalible.
         /// </summary>
         [DefaultValue(true)]
         public bool RandomOutput { get; set; } = false;
-        /// <summary>
-        /// If true, the file system wont clean the output folder after ending.
-        /// </summary>
-        [DefaultValue(false)]
-        public bool NoPurge { get; set; } = false;
     }
 
     /// <summary>
@@ -141,7 +131,6 @@ public partial class VirtualInstanceController : ControllerBase
                 OutputPath = args.Output,
                 Local = args.Local,
                 InitRunners = args.InitRunners,
-                NoClean = args.NoClean,
                 PreLoad = args.PreLoad,
                 Whitelist = args.Whitelist,
                 ReadableExtensions = args.Extensions

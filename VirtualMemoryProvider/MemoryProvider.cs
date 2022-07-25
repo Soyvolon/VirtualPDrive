@@ -104,10 +104,18 @@ namespace MemoryFS
             this.virtualizationInstance.OnQueryFileName = QueryFileNameCallback;
 
             RequiredCallbacks requiredCallbacks = new RequiredCallbacks(this);
-            HResult hr = this.virtualizationInstance.StartVirtualizing(requiredCallbacks);
-            if (hr != HResult.Ok)
+            try
             {
-                Log.Error("Failed to start virtualization instance: {Result}", hr);
+                HResult hr = this.virtualizationInstance.StartVirtualizing(requiredCallbacks);
+                if (hr != HResult.Ok)
+                {
+                    Log.Error("Failed to start virtualization instance: {Result}", hr);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to start virtualization instance: {res}", ex);
                 return false;
             }
 
@@ -128,10 +136,10 @@ namespace MemoryFS
         protected string GetFullPathInLayer(string relativePath) => Path.Combine(this.MemorySystem._rootPath, relativePath);
 
         protected bool DirectoryExistsInLayer(string relativePath)
-            => this.MemorySystem.DirectoryExists(relativePath);
+            => this.MemorySystem.DirectoryExists(relativePath, false);
 
         protected bool FileExistsInLayer(string relativePath)
-            => this.MemorySystem.FileExists(relativePath);
+            => this.MemorySystem.FileExists(relativePath, false);
 
         protected ProjectedFileInfo? GetFileInfoInLayer(string relativePath)
         {
@@ -141,11 +149,11 @@ namespace MemoryFS
 
         protected IEnumerable<ProjectedFileInfo> GetChildItemsInLayer(string relativePath)
         {
-            if (this.MemorySystem.TryGetDirectory(relativePath, out var relRoot))
+            if (this.MemorySystem.TryGetDirectory(relativePath, false, out _))
             {
-                foreach (var item in relRoot.GetEntries())
+                foreach (var item in MemorySystem.GetChildEntries(relativePath, false))
                 {
-                    yield return new(item.Name, Path.Combine(relativePath, item.Name), 0, item is MemoryDirectory);
+                    yield return new(Path.GetFileName(item.Item1), item.Item1, 0, item.Item2);
                 }
             }
 
@@ -155,7 +163,7 @@ namespace MemoryFS
         protected HResult HydrateFile(string relativePath, uint bufferSize, Func<byte[], uint, bool> tryWriteBytes)
         {
             string layerPath = this.GetFullPathInLayer(relativePath);
-            if (!MemorySystem.TryGetFile(layerPath, out var file))
+            if (!MemorySystem.TryGetFile(layerPath, false, out var file))
             {
                 return HResult.FileNotFound;
             }
@@ -194,14 +202,14 @@ namespace MemoryFS
             [NotNullWhen(true)] out ProjectedFileInfo? fileInfo)
         {
             var now = DateTime.Now;
-            if (this.MemorySystem.TryGetFile(path, out var file))
+            if (this.MemorySystem.TryGetFile(path, false, out var file))
             {
                 fileInfo = new(file.Name, path, file.GetSize(), false, now, now, now, now, FileAttributes.ReadOnly);
                 return true;
             }
-            else if (this.MemorySystem.TryGetDirectory(path, out var dir))
+            else if (this.MemorySystem.TryGetDirectory(path, false, out var dir))
             {
-                fileInfo = new(dir.Name, path, 0, true, now, now, now, now, FileAttributes.ReadOnly | FileAttributes.Directory);
+                fileInfo = new(dir, path, 0, true, now, now, now, now, FileAttributes.ReadOnly | FileAttributes.Directory);
                 return true;
             }
 

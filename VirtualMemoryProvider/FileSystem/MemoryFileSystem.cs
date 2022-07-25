@@ -20,6 +20,11 @@ public class MemoryFileSystem : IDisposable
 
     public readonly string _rootPath = "";
 
+    public HashSet<string> Directories { get; private set; } = new();
+    public ConcurrentDictionary<string, MemoryFile> Files { get; private set; } = new();
+    public ConcurrentDictionary<string, HashSet<(string, bool)>> ChildMap { get; private set; } = new();
+    public ConcurrentDictionary<string, string> LowercaseMap { get; private set; } = new();
+
     public MemoryDirectory Root { get; private set; }
 
     private bool disposed = false;
@@ -35,113 +40,236 @@ public class MemoryFileSystem : IDisposable
         Root = new(_rootPath);
 
         FileReader = new(runners);
+
+        // add root dir.
+        Directories.Add("");
+        if (!ChildMap.ContainsKey(""))
+            ChildMap[""] = new HashSet<(string, bool)>();
+        LowercaseMap[""] = "";
     }
 
-    public bool DirectoryExists(string path)
+    public bool DirectoryExists(string path, bool caseSensitive)
     {
         ThrowIfDisposed();
         
-        return TryGetDirectory(path, out _);
+        return TryGetDirectory(path, caseSensitive, out _);
     }
 
-    public bool FileExists(string path)
+    public bool FileExists(string path, bool caseSensitive)
     {
         ThrowIfDisposed();
 
-        return TryGetFile(path, out _);
+        return TryGetFile(path, caseSensitive, out _);
     }
 
-    public bool TryGetFile(string path,
+    public bool TryGetFile(string path, bool caseSensitive,
         [NotNullWhen(true)] out MemoryFile? file)
     {
         ThrowIfDisposed();
 
-        return Root.TryGetFile(path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries), out file);
+        string actualPath;
+        if (caseSensitive)
+        {
+            actualPath = path;
+        }
+        else
+        {
+            var tmp = path.ToLower();
+            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
+            {
+                file = null;
+                return false;
+            }
+        }
+
+        return Files.TryGetValue(actualPath, out file);
+
+        //return Root.TryGetFile(path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries), out file);
     }
 
-    public bool TryGetDirectory(string path,
-        [NotNullWhen(true)] out MemoryDirectory? dir)
+    public bool TryGetDirectory(string path, bool caseSensitive,
+        [NotNullWhen(true)] out string? dir)
     {
         ThrowIfDisposed();
 
-        return Root.TryGetDirectory(path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries), out dir);
+        dir = Path.GetFileName(path);
+
+        string actualPath;
+        if (caseSensitive)
+        {
+            actualPath = path;
+        }
+        else
+        {
+            var tmp = path.ToLower();
+            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
+            {
+                dir = null;
+                return false;
+            }
+        }
+
+        return Directories.Contains(actualPath);
+
+        //return Root.TryGetDirectory(path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries), out dir);
+    }
+
+    public HashSet<(string, bool)> GetChildEntries(string path, bool caseSensitive)
+    {
+        string actualPath;
+        if (caseSensitive)
+        {
+            actualPath = path;
+        }
+        else
+        {
+            var tmp = path.ToLower();
+            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
+            {
+                return new();
+            }
+        }
+
+        if (ChildMap.TryGetValue(actualPath, out var data))
+            return data;
+
+        return new();
     }
 
     public MemoryFile? AddFile(string path, FileEntry? entry = null, string? srcPath = null, string? pboPath = null, int parentOffset = 0)
     {
         ThrowIfDisposed();
 
-#if DEBUG
-        // Places for debugging.
-        if (path.StartsWith("ls_animation")) 
-        { }
-#endif
+        if (Files.TryGetValue(path, out _))
+            return null;
 
-        var dirName = Path.GetDirectoryName(path);
-        if (dirName is not null)
+        var ext = Path.GetExtension(path);
+        var name = Path.GetFileName(path);
+
+        bool read = _readableExtensions.Contains(ext)
+            || _whitelistName.Contains(name);
+
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext, FileReader);
+
+        Files[path] = file;
+        var dir = Path.GetDirectoryName(path) ?? "";
+        dir = AddDirectory(dir);
+
+        if (dir is not null)
         {
-            var dir = AddDirectory(dirName);
-            if (dir is not null)
-            {
-                var ext = Path.GetExtension(path);
-                var name = Path.GetFileName(path);
-
-                bool read = _readableExtensions.Contains(ext) 
-                    || _whitelistName.Contains(name);
-
-                return dir.AddFile(entry, srcPath, pboPath, parentOffset, read, name, ext, FileReader);
-            }
+            if (ChildMap.TryGetValue(dir, out var objects))
+                objects.Add((path, false));
+            else
+                ChildMap[dir] = new HashSet<(string, bool)> { (path, false) };
         }
 
-        return null;
+        LowercaseMap[path.ToLower()] = path;
+
+        return file;
+
+//#if DEBUG
+//        // Places for debugging.
+//        if (path.StartsWith("ls_animation")) 
+//        { }
+//#endif
+
+//        var dirName = Path.GetDirectoryName(path);
+//        if (dirName is not null)
+//        {
+//            var dir = AddDirectory(dirName);
+//            if (dir is not null)
+//            {
+//                var ext = Path.GetExtension(path);
+//                var name = Path.GetFileName(path);
+
+//                bool read = _readableExtensions.Contains(ext) 
+//                    || _whitelistName.Contains(name);
+
+//                return dir.AddFile(entry, srcPath, pboPath, parentOffset, read, name, ext, FileReader);
+//            }
+//        }
+
+//        return null;
     }
 
-    public MemoryDirectory? AddDirectory(string path)
+    public string? AddDirectory(string path)
     {
         ThrowIfDisposed();
 
-        var dirs = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-
-        var parent = Root;
-        foreach (var dir in dirs)
+        if (path == "")
         {
-            if (parent is not null)
-                parent = parent.AddDirectory(dir);
-            else break;
+            return path;
         }
 
-        return parent;
+        if (!Path.HasExtension(path))
+        {
+            var parts = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            for(int i = 0; i < parts.Length; i++)
+            {
+                var dir = string.Join(Path.DirectorySeparatorChar, parts[..(i + 1)]);
+
+                Directories.Add(dir); 
+                
+                var parent = Path.GetDirectoryName(dir) ?? "";
+                if (ChildMap.TryGetValue(parent, out var objects))
+                {
+                    objects.Add((dir, true));
+                }
+                else
+                {
+                    ChildMap[parent] = new HashSet<(string, bool)> { (dir, true) };
+                }
+
+                LowercaseMap[dir.ToLower()] = dir;
+            }
+
+            return path;
+        }
+
+        return null;
+
+        //var dirs = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+
+        //var parent = Root;
+        //foreach (var dir in dirs)
+        //{
+        //    if (parent is not null)
+        //        parent = parent.AddDirectory(dir);
+        //    else break;
+        //}
+
+        //return parent;
     }
 
     public async Task InitalizeFileSystemAsync()
     {
         ThrowIfDisposed();
 
-        if (FileReader is not null)
-        {
-            Stack<MemoryDirectory> loadStack = new();
-            loadStack.Push(Root);
+        //if (FileReader is not null)
+        //{
+        //    Stack<MemoryDirectory> loadStack = new();
+        //    loadStack.Push(Root);
 
-            while (loadStack.TryPop(out var parent))
-            {
-                foreach (var item in parent.Directories)
-                {
-                    loadStack.Push(item);
-                }
+        //    while (loadStack.TryPop(out var parent))
+        //    {
+        //        foreach (var item in parent.Directories)
+        //        {
+        //            loadStack.Push(item);
+        //        }
 
-                _ = parent.InitalizeDirectory(false);
-            }
+        //        _ = parent.InitalizeDirectory(false);
+        //    }
 
-            await FileReader.WaitForEmptyQueueAsync();
-        }
+        //    await FileReader.WaitForEmptyQueueAsync();
+        //}
     }
 
     public async Task InitalizeFileAsync(string path)
     {
         ThrowIfDisposed();
 
-        if (TryGetFile(path, out var file))
-            await InitalizeFileAsync(file);
+        //if (TryGetFile(path, out var file))
+        //    await InitalizeFileAsync(file);
     }
 
     private async Task InitalizeFileAsync(MemoryFile file)
@@ -167,6 +295,11 @@ public class MemoryFileSystem : IDisposable
 
         Root = null;
         FileReader = null;
+
+        foreach (var file in Files.Values)
+            file.Dispose();
+        Files = null;
+        Directories = null;
     }
 #nullable enable
 }

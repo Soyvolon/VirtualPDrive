@@ -17,7 +17,5 @@ namespace VirtualPDrive.Client
         public string[] Whitelist { get; set; } = Array.Empty<string>();
         public bool PreLoad { get; set; } = false;
         public int InitRunners { get; set; } = 2;
-        public bool NoClean { get; set; } = false;
-        public bool NoPurge { get; set; } = false;
     }
 }

@@ -113,7 +113,6 @@ public class VirtualClientManager : IVirtualClientManager
         if (generatedRandomOutputFolder)
         {
             Log.Information("Created auto generated directory {path}", settings.OutputPath);
-            settings.NoPurge = false;
         }
 
         try

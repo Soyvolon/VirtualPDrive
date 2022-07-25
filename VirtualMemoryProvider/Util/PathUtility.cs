@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace VirtualMemoryProvider.Util;
 public static class PathUtility
 {
-    public static string CombineWithPrefix(this string file, string prefix)
+    public static string CombineWithPrefix(this string file, string prefix, string ignoreFront, bool forceLowercase)
     {
         int pathOffset = 0;
         int fileOffset = 0;
@@ -21,7 +21,8 @@ public static class PathUtility
             invalid = false;
             for (fileOffset = 0; fileOffset < fileTree.Length && fileOffset < subsection.Length; fileOffset++)
             {
-                if (subsection[fileOffset] != fileTree[fileOffset])
+                if (!subsection[fileOffset].Equals(fileTree[fileOffset],
+                    forceLowercase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     invalid = true;
                     break;
@@ -33,10 +34,22 @@ public static class PathUtility
         }
 
         if (invalid)
-            return Path.Combine(prefix, file);
+        {
+            var adjustedPrefix = string.Join(Path.DirectorySeparatorChar,
+                prefix.Split(Path.DirectorySeparatorChar)
+                .SkipWhile(x => x.Equals(ignoreFront,
+                    forceLowercase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)));
 
-        var pathParts = prefixTree[..(pathOffset)].ToList();
-        pathParts.AddRange(fileTree[(fileOffset - 1)..]);
+            return Path.Combine(adjustedPrefix, file);
+        }
+
+#if DEBUG
+        if (prefix.StartsWith("a3"))
+        { }
+#endif
+
+        var pathParts = prefixTree[1..pathOffset].ToList();
+        pathParts.AddRange(fileTree);
 
         var output = Path.Combine(pathParts.ToArray());
         return output;

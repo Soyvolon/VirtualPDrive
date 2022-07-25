@@ -48,12 +48,8 @@ public class Program
 
     [Option("-p|--preload", CommandOptionType.NoValue, Description = "Set to initalize all allowed file extensions on load.")]
     private bool PreLoad { get; set; } = false;
-    [Option("--no-clean", CommandOptionType.NoValue, Description = "Set to prevent clearing of output folder before use.")]
-    public bool NoClean { get; set; } = false;
     [Option("--init-runners", CommandOptionType.SingleValue, Description = "Set the ammount of initalize file instances that can run at one time.")]
     public int InitRunners { get; set; } = 2;
-    [Option("--no-purge", CommandOptionType.NoValue, Description = "Set to prevent clearing of output folder after use.")]
-    public bool NoPurge { get; set; } = false;
 
     private VirtualClient? Client { get; set; }
 
@@ -78,15 +74,20 @@ public class Program
             ReadableExtensions = Extensions,
             Whitelist = Whitelist,
             PreLoad = PreLoad,
-            NoClean = NoClean,
-            InitRunners = InitRunners,
-            NoPurge = NoPurge
+            InitRunners = InitRunners
         });
 
         Client.OnStart += Client_OnStart;
         Client.OnShutdown += Client_OnShutdown;
-
-        Client.Start();
+        Client.OnError += Client_OnError;
+        try
+        {
+            Client.Start();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Client encountered an error: {ex}", ex);
+        }
 
         var cancel = new CancellationTokenSource();
 
@@ -97,6 +98,14 @@ public class Program
         };
 
         await Task.Delay(-1, cancel.Token);
+    }
+
+    private Task Client_OnError(object sender, VirtualClientErrorEventArgs args)
+    {
+        Log.Error("Something went wrong: {args}", args);
+        Environment.Exit(-1);
+
+        return Task.CompletedTask;
     }
 
     private Task Client_OnShutdown(object sender)

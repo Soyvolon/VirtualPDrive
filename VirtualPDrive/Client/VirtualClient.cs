@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 using MemoryFS;
 using VirtualMemoryProvider.Util;
+using System.Collections.Concurrent;
+using System.Management;
+using Microsoft.Win32;
 
 namespace VirtualPDrive.Client;
 public class VirtualClient
@@ -30,7 +33,7 @@ public class VirtualClient
 
     public VirtualClientSettings Settings { get; protected set; }
 
-    private MemoryProvider? Provider { get; set; }
+    private ConcurrentDictionary<string, MemoryProvider> Providers { get; set; } = new();
 
     private readonly CancellationTokenSource _cancellationSource;
     private readonly CancellationToken _cancellationToken;
@@ -49,7 +52,7 @@ public class VirtualClient
     {
         Initalize();
 
-        if (Provider is null)
+        if (Providers is null)
         {
             LogError("No provider was built for the virtual file system.");
             return;
@@ -94,16 +97,28 @@ public class VirtualClient
         {
             Log.Information("Preloading allowed files...");
 
-            await Provider!.MemorySystem.InitalizeFileSystemAsync();
+            foreach(var p in Providers!.Values)
+                await p.MemorySystem.InitalizeFileSystemAsync();
 
             Log.Information("File preloading complete.");
         }
 
-        if (!Provider!.StartVirtualization())
+        foreach (var p in Providers!.Values)
         {
-            LogError("Virtualization start failed. Another instance with the same" +
-                " output route may be running.");
-            return;
+            try
+            {
+                if (!p.StartVirtualization())
+                {
+                    Log.Warning("Virtualization start failed for {root}. Another instance with the same" +
+                        " output route may be running.", p.Options.OutputRoot);
+                    continue;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("An error occoured when starting virtualization: {ex}", ex);
+                continue;
+            }
         }
 
         Log.Information($"Virtual file server started at {Settings.OutputPath}");
@@ -112,7 +127,8 @@ public class VirtualClient
             await OnStart.Invoke(this);
     }
 
-    private void Initalize()
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "This is windows only.")]
+    private async void Initalize()
     {
         Settings.ArmAPath = Path.Combine(Environment.CurrentDirectory, Settings.ArmAPath);
         if (!Directory.Exists(Settings.ArmAPath))
@@ -131,35 +147,52 @@ public class VirtualClient
 
         Log.Information("Found Arma 3 - Initalizing Runner");
 
+        Settings.OutputPath = Path.GetFullPath(Settings.OutputPath);
         if (!Directory.Exists(Settings.OutputPath))
         {
             Log.Information($"Creating output directory at {Settings.OutputPath}.");
             Directory.CreateDirectory(Settings.OutputPath);
         }
-        else if (!Settings.NoClean)
+
+        var allDrives = DriveInfo.GetDrives();
+        var drive = allDrives.FirstOrDefault(x => x.Name == Settings.OutputPath);
+        if (drive is not null)
         {
-            Log.Information("Cleaning output directory");
+            if (drive.RootDirectory.Name[..2].Equals("P:"))
+            {
+                // Find P Drive install location.
+                var toolsPath = (string?)Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Bohemia Interactive\\Arma 3 Tools", "path", "");
+                if (!string.IsNullOrWhiteSpace(toolsPath))
+                {
+                    using var file = new StreamReader(File.OpenRead(Path.Join(toolsPath, "settings.ini")));
+                    bool set = false;
+                    while(!file.EndOfStream)
+                    {
+                        var line = file.ReadLine();
+                        if (line?.StartsWith("P_DrivePath") ?? false)
+                        {
+                            var value = line[(line.IndexOf('"') + 1)..line.LastIndexOf('"')];
+                            Settings.OutputPath = value;
+                            set = true;
+                            break;
+                        }
+                    }
 
-            CleanOutput();
-
-            Directory.CreateDirectory(Settings.OutputPath);
+                    if (!set)
+                    {
+                        var ex = new Exception("Failed to find P: drive registration in a3 tools settings.ini.");
+                        LogError("Failed to find P: drive registration in a3 tools settings.ini", ex);
+                        throw ex;
+                    }
+                }
+                else
+                {
+                    var ex = new Exception("Failed to find A3 Tools registration.");
+                    LogError("Failed to find A3 Tools registration", ex);
+                    throw ex;
+                }
+            }
         }
-
-        var options = new MemoryProviderOptions()
-        {
-            VirtRoot = Settings.OutputPath,
-            OutputRoot = Path.GetFileName(Settings.OutputPath),
-            DenyDeletes = true,
-            EnableNotifications = false,
-
-            ReadableExtensions = Settings.ReadableExtensions,
-            Whitelist = Settings.Whitelist,
-            InitRunners = Settings.InitRunners,
-        };
-
-        Provider = new MemoryProvider(options);
-
-        Log.Information("Created virtual provider.");
     }
 
     private void ReadArmAPBO()
@@ -218,7 +251,7 @@ public class VirtualClient
 
     private void ReadPBO(string pboPath)
     {
-        if (Provider is null)
+        if (Providers is null)
         {
             Log.Error("No proivder is avalible to add PBOs to.");
             return;
@@ -227,30 +260,41 @@ public class VirtualClient
         var pbo = new PBO(pboPath);
         if (!string.IsNullOrWhiteSpace(pbo.Prefix))
         {
-            foreach (var file in pbo.FileEntries)
+            var provider = GetOrRegisterNewProvider(pbo.Prefix);
+
+            if (provider is not null)
             {
-                var root = Path.Join(pbo.Prefix, Path.GetDirectoryName(file.FileName) ?? "");
-
-                if (root is not null)
+                foreach (var file in pbo.FileEntries)
                 {
-#if DEBUG
-                    // Places for debugging.
-                    if (root.StartsWith("ls_animation"))
-                    { }
-#endif
-                    var rootedPath = file.FileName.CombineWithPrefix(root);
 
-                    var res = Provider.MemorySystem.AddFile(rootedPath, file, pboPath: pbo.PBOFilePath, parentOffset: pbo.DataOffset);
+                    var root = Path.Join(pbo.Prefix, Path.GetDirectoryName(file.FileName) ?? "");
 
-                    if (res is null)
+                    if (root is not null)
                     {
-                        Log.Warning("Failed to add file: {name}", file.FileName);
+#if DEBUG
+                        // Places for debugging.
+                        if (root.StartsWith("ls_animation"))
+                        { }
+#endif
+                        var rootedPath = file.FileName.CombineWithPrefix(root, provider.Options.OutputRoot, true);
+
+                        var res = provider.MemorySystem.AddFile(rootedPath, file, pboPath: pbo.PBOFilePath, parentOffset: pbo.DataOffset);
+
+                        if (res is null)
+                        {
+                            Log.Warning("Failed to add file: {name}", file.FileName);
+                        }
+                    }
+                    else
+                    {
+                        Log.Warning("No root was found for {name}", file.FileName);
                     }
                 }
-                else
-                {
-                    Log.Warning("No root was found for {name}", file.FileName);
-                }
+            }
+            else
+            {
+                Log.Error("Failed to get a provider for {prefix}", pbo.Prefix);
+                return;
             }
 
             Log.Debug("Parsed {prefix}", pbo.Prefix);
@@ -263,7 +307,7 @@ public class VirtualClient
 
     private void LoadLocalFiles()
     {
-        if (Provider is null)
+        if (Providers is null)
         {
             Log.Error("No proivder is avalible to add local files to.");
             return;
@@ -274,10 +318,14 @@ public class VirtualClient
         List<string> files = new();
         Stack<string> searchStack = new();
         searchStack.Push(Settings.Local!);
+        bool notFirst = false;
 
         while (searchStack.TryPop(out var search))
         {
-            files.AddRange(Directory.GetFiles(search));
+            if (notFirst)
+                files.AddRange(Directory.GetFiles(search));
+            else
+                notFirst = true;
 
             foreach (var dir in Directory.GetDirectories(search))
                 searchStack.Push(dir);
@@ -286,10 +334,57 @@ public class VirtualClient
         foreach (var file in files)
         {
             var path = Path.GetRelativePath(Settings.Local!, file);
-            Provider.MemorySystem.AddFile(path, null);
+            var provider = GetOrRegisterNewProvider(path);
+
+            if (provider is not null)
+            {
+                path = string.Join(Path.DirectorySeparatorChar, path.Split(Path.DirectorySeparatorChar)[1..]);
+                provider.MemorySystem.AddFile(path, null);
+            }
+            else
+                Log.Warning("Failed to get a provider for {path}", path);
         }
 
         Log.Information("...Added {count} Settings.Local files.", files.Count);
+    }
+
+    private MemoryProvider? GetOrRegisterNewProvider(string path)
+    {
+        var rootPart = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+#if DEBUG
+        if(rootPart?.StartsWith("kobra", StringComparison.OrdinalIgnoreCase) ?? false)
+        { }
+#endif
+
+        if (!string.IsNullOrWhiteSpace(rootPart))
+        {
+            var rootKey = rootPart.ToLower();
+            if (!Providers.TryGetValue(rootKey, out var provider))
+            {
+                var options = new MemoryProviderOptions()
+                {
+                    VirtRoot = Path.Join(Settings.OutputPath, rootPart),
+                    OutputRoot = rootPart,
+                    DenyDeletes = true,
+                    EnableNotifications = false,
+
+                    ReadableExtensions = Settings.ReadableExtensions,
+                    Whitelist = Settings.Whitelist,
+                    InitRunners = Settings.InitRunners,
+                };
+
+                var newProvider = new MemoryProvider(options);
+                Providers[rootKey] = newProvider;
+                return newProvider;
+            }
+
+            return provider;
+        }
+        else
+        {
+            Log.Error("Failed to get inital path part for {path}", path);
+            return null;
+        }
     }
 
     private void LogError(string msg, Exception? ex = null)
@@ -308,38 +403,6 @@ public class VirtualClient
         });
     }
 
-    private void CleanOutput()
-    {
-        Stack<string> dirStack = new();
-        dirStack.Push(Settings.OutputPath);
-
-        while (dirStack.TryPop(out var dir))
-        {
-            var files = Directory.GetFiles(dir);
-            foreach (var f in files)
-            {
-                try
-                {
-                    File.Delete(f);
-                }
-                catch { }
-            }
-
-            var dirs = Directory.GetDirectories(dir);
-            foreach (var d in dirs)
-            {
-                try
-                {
-                    Directory.Delete(d, true);
-                }
-                catch
-                {
-                    dirStack.Push(d);
-                }
-            }
-        }
-    }
-
     public void Dispose()
     {
         Log.Information("Closing file server.");
@@ -347,22 +410,22 @@ public class VirtualClient
         _cancellationSource.Cancel();
         _cancellationSource.Dispose();
 
-        try
+        foreach (var p in Providers.Values)
         {
-            Provider?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Failed to stop the virtual provider {err}", ex);
+            try
+            {
+                p.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to stop the virtual provider {name} {err}", p.Options.OutputRoot, ex);
+            }
         }
 
         OnInit = null;
         OnStart = null;
         OnError = null;
-        Provider = null;
-
-        if (!Settings.NoPurge)
-            CleanOutput();
+        Providers = null;
 
         if (OnShutdown is not null)
             OnShutdown?.Invoke(this);

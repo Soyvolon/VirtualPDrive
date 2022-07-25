@@ -35,7 +35,7 @@ public class MemoryDirectory : IMemoryItem
     {
         if (path.Length == 1)
         {
-            file = Files.FirstOrDefault(x => x.Name.Equals(path[0], StringComparison.OrdinalIgnoreCase));
+            file = Files.FirstOrDefault(x => x.Name.Equals(path[0]));
             return file is not null;
         }
 
@@ -57,7 +57,7 @@ public class MemoryDirectory : IMemoryItem
 
         foreach(var localDir in Directories)
         {
-            if (localDir.Name.Equals(path[0], StringComparison.OrdinalIgnoreCase))
+            if (localDir.Name.Equals(path[0]))
                 return localDir.TryGetDirectory(path.Length == 1 ? Array.Empty<string>() : path.Skip(1).ToArray(), out dir);
         }
 
@@ -84,7 +84,7 @@ public class MemoryDirectory : IMemoryItem
         if (name == Name)
             return this;
 
-        var dirSearch = Directories.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        var dirSearch = Directories.FirstOrDefault(x => x.Name.Equals(name));
         if (dirSearch is not null)
             return dirSearch;
 
