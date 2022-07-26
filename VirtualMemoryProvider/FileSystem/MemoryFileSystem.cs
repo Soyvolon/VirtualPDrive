@@ -67,19 +67,12 @@ public class MemoryFileSystem : IDisposable
     {
         ThrowIfDisposed();
 
-        string actualPath;
-        if (caseSensitive)
+        var actualPath = GetPath(path, caseSensitive);
+
+        if (actualPath is null)
         {
-            actualPath = path;
-        }
-        else
-        {
-            var tmp = path.ToLower();
-            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
-            {
-                file = null;
-                return false;
-            }
+            file = null;
+            return false;
         }
 
         return Files.TryGetValue(actualPath, out file);
@@ -94,19 +87,12 @@ public class MemoryFileSystem : IDisposable
 
         dir = Path.GetFileName(path);
 
-        string actualPath;
-        if (caseSensitive)
+        var actualPath = GetPath(path, caseSensitive);
+
+        if (actualPath is null)
         {
-            actualPath = path;
-        }
-        else
-        {
-            var tmp = path.ToLower();
-            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
-            {
-                dir = null;
-                return false;
-            }
+            dir = null;
+            return false;
         }
 
         return Directories.Contains(actualPath);
@@ -116,19 +102,10 @@ public class MemoryFileSystem : IDisposable
 
     public HashSet<(string, bool)> GetChildEntries(string path, bool caseSensitive)
     {
-        string actualPath;
-        if (caseSensitive)
-        {
-            actualPath = path;
-        }
-        else
-        {
-            var tmp = path.ToLower();
-            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
-            {
-                return new();
-            }
-        }
+        var actualPath = GetPath(path, caseSensitive);
+
+        if (actualPath is null)
+            return new();
 
         if (ChildMap.TryGetValue(actualPath, out var data))
             return data;
@@ -245,6 +222,11 @@ public class MemoryFileSystem : IDisposable
     {
         ThrowIfDisposed();
 
+        foreach (var file in Files.Values)
+            await InitalizeFileAsync(file, false);
+
+        await FileReader.WaitForEmptyQueueAsync();
+
         //if (FileReader is not null)
         //{
         //    Stack<MemoryDirectory> loadStack = new();
@@ -268,15 +250,30 @@ public class MemoryFileSystem : IDisposable
     {
         ThrowIfDisposed();
 
+        var actualPath = GetPath(path, false);
+
+        if (actualPath is null)
+            return;
+
+        if (Files.TryGetValue(actualPath, out var file))
+            await InitalizeFileAsync(file);
+
         //if (TryGetFile(path, out var file))
         //    await InitalizeFileAsync(file);
     }
 
-    private async Task InitalizeFileAsync(MemoryFile file)
+    private async Task InitalizeFileAsync(MemoryFile file, bool wait = true)
     {
         ThrowIfDisposed();
 
-        await file.WaitForInitAsync();
+        if (wait)
+        {
+            await file.WaitForInitAsync();
+        }
+        else
+        {
+            file.Initalize();
+        }
     }
 
 #nullable disable
@@ -284,6 +281,25 @@ public class MemoryFileSystem : IDisposable
     {
         if (disposed)
             throw new ObjectDisposedException(nameof(MemoryFileSystem), "This memory file system is disposed.");
+    }
+
+    private string? GetPath(string path, bool caseSensitive)
+    {
+        string actualPath;
+        if (caseSensitive)
+        {
+            actualPath = path;
+        }
+        else
+        {
+            var tmp = path.ToLower();
+            if (!LowercaseMap.TryGetValue(tmp, out actualPath!))
+            {
+                return null;
+            }
+        }
+
+        return actualPath;
     }
 
     public void Dispose()
