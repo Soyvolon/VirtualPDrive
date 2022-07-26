@@ -97,8 +97,11 @@ public class VirtualClient
         {
             Log.Information("Preloading allowed files...");
 
+            List<Task> run = new();
             foreach(var p in Providers!.Values)
-                await p.MemorySystem.InitalizeFileSystemAsync();
+                run.Add(p.MemorySystem.InitalizeFileSystemAsync());
+
+            await Task.WhenAll(run);
 
             Log.Information("File preloading complete.");
         }

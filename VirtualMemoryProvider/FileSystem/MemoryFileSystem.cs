@@ -13,7 +13,7 @@ using VirtualMemoryProvider.Util;
 namespace MemoryFS.FileSystem;
 public class MemoryFileSystem : IDisposable
 {
-    internal FileReaderUtil FileReader { get; private set; }
+    internal static FileReaderUtil FileReader { get; private set; }
 
     private readonly HashSet<string> _readableExtensions;
     private readonly HashSet<string> _whitelistName;
@@ -39,7 +39,8 @@ public class MemoryFileSystem : IDisposable
 
         Root = new(_rootPath);
 
-        FileReader = new(runners);
+        if (FileReader is null)
+            FileReader = new(runners);
 
         // add root dir.
         Directories.Add("");
@@ -126,7 +127,7 @@ public class MemoryFileSystem : IDisposable
         bool read = _readableExtensions.Contains(ext)
             || _whitelistName.Contains(name);
 
-        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext, FileReader);
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext);
 
         Files[path] = file;
         var dir = Path.GetDirectoryName(path) ?? "";

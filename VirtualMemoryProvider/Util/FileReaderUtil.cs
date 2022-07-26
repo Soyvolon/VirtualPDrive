@@ -29,6 +29,7 @@ public class FileReaderUtil : IDisposable
     private readonly CancellationToken _cancellationToken;
 
     public bool Running { get; set; }
+    private bool _disposed = false;
 
     public FileReaderUtil(int runners)
     {
@@ -44,6 +45,9 @@ public class FileReaderUtil : IDisposable
 
     public void Enqueue(MemoryFile file, bool priority)
     {
+        if (_disposed)
+            return;
+
         _cancellationToken.ThrowIfCancellationRequested();
 
         if (!string.IsNullOrWhiteSpace(file.SrcPath))
@@ -71,6 +75,9 @@ public class FileReaderUtil : IDisposable
 
     private async Task ReadAndProcess(MemoryFile file)
     {
+        if (_disposed)
+            return;
+
         if (MMFUtil.Active is null)
         {
             file._initalizing = false;
@@ -90,7 +97,7 @@ public class FileReaderUtil : IDisposable
             {
                 if (MMFUtil.Active.Locks.TryGetValue(file.SrcPath!, out var _lock))
                 {
-                    if (await _lock.WaitAsync(TimeSpan.FromSeconds(5), _cancellationToken))
+                    if (await _lock.WaitAsync(TimeSpan.FromSeconds(30), _cancellationToken))
                     {
                         try
                         {
@@ -174,6 +181,9 @@ public class FileReaderUtil : IDisposable
 
     private Task<byte[]> ProcessBinAsync(Stream stream, MemoryFile file)
     {
+        if (_disposed)
+            return Task.FromResult(Array.Empty<byte>());
+
         // Get the file data
         var fileData = new ParamFile(stream);
 
@@ -195,6 +205,9 @@ public class FileReaderUtil : IDisposable
 
     private async Task<byte[]> ProcessDefaultAsync(Stream stream)
     {
+        if (_disposed)
+            return Array.Empty<byte>();
+
         _cancellationToken.ThrowIfCancellationRequested();
 
         List<byte> fileData = new();
@@ -220,6 +233,9 @@ public class FileReaderUtil : IDisposable
 
     private void StartIfNotStarted()
     {
+        if (_disposed)
+            return;
+
         _cancellationToken.ThrowIfCancellationRequested();
 
         if (!Running)
@@ -267,6 +283,9 @@ public class FileReaderUtil : IDisposable
 
     private void RunItem(MemoryFile next)
     {
+        if (_disposed)
+            return;
+
         Guid id;
         do
         {
@@ -290,6 +309,9 @@ public class FileReaderUtil : IDisposable
 
     public async Task WaitForEmptyQueueAsync(CancellationToken? cancellation = null)
     {
+        if (_disposed)
+            return;
+
         if (cancellation is null)
             cancellation = _cancellationToken;
 
@@ -306,6 +328,10 @@ public class FileReaderUtil : IDisposable
 
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
         _cancelSource.Cancel();
         _cancelSource.Dispose();
 

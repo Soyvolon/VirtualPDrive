@@ -27,11 +27,9 @@ public class MemoryFile : IMemoryItem
     internal bool _initalized = false;
     internal bool _initalizing = false;
 
-    private FileReaderUtil _fileReader;
-
     private bool disposed;
 
-    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string extension, FileReaderUtil fileReader)
+    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string extension)
     {
         SrcPath = srcPath ?? "";
         AllowRead = allowRead;
@@ -46,8 +44,6 @@ public class MemoryFile : IMemoryItem
             PboDataSize = entry.DataSize;
             IsFromPBO = true;
         }
-
-        _fileReader = fileReader;
     }
 
     internal void Initalize(bool priority = false)
@@ -58,7 +54,7 @@ public class MemoryFile : IMemoryItem
             return;
 
         _initalizing = true;
-        _fileReader.Enqueue(this, priority);
+        MemoryFileSystem.FileReader.Enqueue(this, priority);
     }
 
     internal async Task<bool> WaitForInitAsync(bool priority = false)
@@ -139,6 +135,5 @@ public class MemoryFile : IMemoryItem
     public void Dispose()
     {
         _fileData = null;
-        _fileReader = null;
     }
 }
