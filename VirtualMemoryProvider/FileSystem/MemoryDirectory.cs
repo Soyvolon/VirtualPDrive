@@ -67,7 +67,7 @@ public class MemoryDirectory : IMemoryItem
 
     public MemoryFile AddFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string ext)
     {
-        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, allowRead, name, ext);
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, allowRead, name, ext, "", null);
         if(!Files.Add(file))
         {
             if(Files.TryGetValue(file, out var actual))

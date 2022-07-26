@@ -197,9 +197,6 @@ public class FileReaderUtil : IDisposable
 
         _cancellationToken.ThrowIfCancellationRequested();
 
-        // Adjust the name
-        file.ChangeExtension(".cpp");
-
         return Task.FromResult(data);
     }
 
@@ -318,7 +315,11 @@ public class FileReaderUtil : IDisposable
         cancellation.Value.ThrowIfCancellationRequested();
 
         while (_derapQueue.Count > 0)
+        {
             await Task.Delay(TimeSpan.FromSeconds(0.25), cancellation.Value);
+            if (!Running)
+                StartIfNotStarted();
+        }
 
         cancellation.Value.ThrowIfCancellationRequested();
 

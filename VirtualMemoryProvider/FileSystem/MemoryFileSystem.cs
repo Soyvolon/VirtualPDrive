@@ -127,7 +127,7 @@ public class MemoryFileSystem : IDisposable
         bool read = _readableExtensions.Contains(ext)
             || _whitelistName.Contains(name);
 
-        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext);
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext, path, this);
 
         Files[path] = file;
         var dir = Path.GetDirectoryName(path) ?? "";
@@ -307,7 +307,7 @@ public class MemoryFileSystem : IDisposable
     {
         disposed = true;
 
-        FileReader.Dispose();
+        FileReader?.Dispose();
         Root.Dispose();
 
         Root = null;

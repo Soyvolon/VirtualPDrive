@@ -16,6 +16,7 @@ public class MemoryFile : IMemoryItem
 {
     public string Name { get; set; }
     public string Extension { get; set; }
+    public string SystemPath { get; set; }
 
     public string SrcPath { get; init; }
     public bool IsFromPBO { get; init; }
@@ -28,8 +29,9 @@ public class MemoryFile : IMemoryItem
     internal bool _initalizing = false;
 
     private bool disposed;
+    private MemoryFileSystem _fs;
 
-    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string extension)
+    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string extension, string sysPath, MemoryFileSystem fs)
     {
         SrcPath = srcPath ?? "";
         AllowRead = allowRead;
@@ -44,6 +46,9 @@ public class MemoryFile : IMemoryItem
             PboDataSize = entry.DataSize;
             IsFromPBO = true;
         }
+
+        SystemPath = sysPath;
+        _fs = fs;
     }
 
     internal void Initalize(bool priority = false)
@@ -80,17 +85,6 @@ public class MemoryFile : IMemoryItem
         ThrowIfDisposed();
 
         return new(_fileData);
-    }
-
-    public void ChangeExtension(string newExtension)
-    {
-        ThrowIfDisposed();
-
-        if (!newExtension.StartsWith('.'))
-            newExtension = "." + newExtension;
-
-        Extension = newExtension;
-        Name = Path.GetFileNameWithoutExtension(Name) + newExtension;
     }
 
     public long GetSize()
