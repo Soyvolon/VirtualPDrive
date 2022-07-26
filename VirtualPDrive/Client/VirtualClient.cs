@@ -172,6 +172,12 @@ public class VirtualClient
                         if (line?.StartsWith("P_DrivePath") ?? false)
                         {
                             var value = line[(line.IndexOf('"') + 1)..line.LastIndexOf('"')];
+
+                            if (value == "/full/path/to/ArmaWork")
+                            {
+                                value = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Arma 3 Projects");
+                            }
+
                             Settings.OutputPath = value;
                             set = true;
                             break;
