@@ -2,7 +2,7 @@
 
 using System.Collections.Concurrent;
 
-using VirtualMemoryProvider.Util;
+using PDriveFileSystem.Util;
 
 using VirtualPDrive.API.Extensions;
 using VirtualPDrive.API.Structures.VC;

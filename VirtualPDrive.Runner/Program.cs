@@ -4,7 +4,7 @@ using McMaster.Extensions.CommandLineUtils;
 
 using Serilog;
 
-using MemoryFS;
+using PDriveFileSystem;
 
 using VirtualPDrive.Client;
 using Microsoft.Win32;

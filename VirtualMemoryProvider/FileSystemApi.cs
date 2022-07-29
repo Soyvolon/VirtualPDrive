@@ -8,7 +8,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     public sealed class FileSystemApi
     {

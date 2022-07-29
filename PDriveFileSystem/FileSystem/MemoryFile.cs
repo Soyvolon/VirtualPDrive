@@ -9,9 +9,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using VirtualMemoryProvider.Util;
+using PDriveFileSystem.Util;
 
-namespace MemoryFS.FileSystem;
+namespace PDriveFileSystem.FileSystem;
 public class MemoryFile : IMemoryItem
 {
     public string Name { get; set; }
@@ -23,6 +23,7 @@ public class MemoryFile : IMemoryItem
     public bool AllowRead { get; init; }
     public int DataOffset { get; init; }
     public int PboDataSize { get; init; }
+    public string RootPath { get; init; }
 
     internal byte[] _fileData = Array.Empty<byte>();
     internal bool _initalized = false;
@@ -31,7 +32,9 @@ public class MemoryFile : IMemoryItem
     private bool disposed;
     private MemoryFileSystem _fs;
 
-    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, int parentOffset, bool allowRead, string name, string extension, string sysPath, MemoryFileSystem fs)
+    public MemoryFile(FileEntry? entry, string? srcPath, string? pboPath, 
+        int parentOffset, bool allowRead, string name, string extension,
+        string sysPath, string rootPath, MemoryFileSystem fs)
     {
         SrcPath = srcPath ?? "";
         AllowRead = allowRead;
@@ -48,6 +51,7 @@ public class MemoryFile : IMemoryItem
         }
 
         SystemPath = sysPath;
+        RootPath = rootPath;
         _fs = fs;
     }
 
@@ -120,6 +124,13 @@ public class MemoryFile : IMemoryItem
 
         return new MemoryStream(_fileData);
     }
+
+    public string GetRealPath(string extension)
+    {
+        var src = Path.Join(Path.GetDirectoryName(SystemPath), Path.GetFileName(SystemPath) + extension);
+        return Path.Join(RootPath, src);
+    }
+
     private void ThrowIfDisposed()
     {
         if (disposed)

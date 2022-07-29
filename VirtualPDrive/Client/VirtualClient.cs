@@ -8,8 +8,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using MemoryFS;
-using VirtualMemoryProvider.Util;
+using PDriveFileSystem;
+using PDriveFileSystem.Util;
 using System.Collections.Concurrent;
 using System.Management;
 using Microsoft.Win32;
@@ -269,7 +269,7 @@ public class VirtualClient
         var pbo = new PBO(pboPath);
         if (!string.IsNullOrWhiteSpace(pbo.Prefix))
         {
-            var provider = GetOrRegisterNewProvider(pbo.Prefix);
+            var provider = GetOrRegisterNewProvider(pbo.Prefix, false);
 
             if (provider is not null)
             {
@@ -343,7 +343,7 @@ public class VirtualClient
         foreach (var file in files)
         {
             var path = Path.GetRelativePath(Settings.Local!, file);
-            var provider = GetOrRegisterNewProvider(path);
+            var provider = GetOrRegisterNewProvider(path, false);
 
             if (provider is not null)
             {
@@ -357,7 +357,7 @@ public class VirtualClient
         Log.Information("...Added {count} Settings.Local files.", files.Count);
     }
 
-    private MemoryProvider? GetOrRegisterNewProvider(string path)
+    private MemoryProvider? GetOrRegisterNewProvider(string path, bool localPath)
     {
         var rootPart = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
 #if DEBUG
@@ -380,6 +380,7 @@ public class VirtualClient
                     ReadableExtensions = Settings.ReadableExtensions,
                     Whitelist = Settings.Whitelist,
                     InitRunners = Settings.InitRunners,
+                    Local = localPath
                 };
 
                 var newProvider = new MemoryProvider(options);

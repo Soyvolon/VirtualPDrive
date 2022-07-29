@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     public static class EnvironmentHelper
     {

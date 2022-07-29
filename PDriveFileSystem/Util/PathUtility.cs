@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VirtualMemoryProvider.Util;
+namespace PDriveFileSystem.Util;
 public static class PathUtility
 {
     public static string CombineWithPrefix(this string file, string prefix, string ignoreFront, bool forceLowercase)

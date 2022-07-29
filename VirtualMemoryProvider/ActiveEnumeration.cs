@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Windows.ProjFS;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     internal class ActiveEnumeration
     {

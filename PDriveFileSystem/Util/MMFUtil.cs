@@ -1,4 +1,4 @@
-﻿using MemoryFS.FileSystem;
+﻿using PDriveFileSystem.FileSystem;
 
 using System;
 using System.Collections.Concurrent;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VirtualMemoryProvider.Util;
+namespace PDriveFileSystem.Util;
 public class MMFUtil : IDisposable
 {
     public static MMFUtil? Active { get; set; } = null;

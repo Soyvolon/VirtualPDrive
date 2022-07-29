@@ -1,6 +1,6 @@
 ﻿using BIS.Core.Config;
 
-using MemoryFS.FileSystem;
+using PDriveFileSystem.FileSystem;
 
 using Serilog;
 
@@ -12,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VirtualMemoryProvider.Util;
+namespace PDriveFileSystem.Util;
 public class FileReaderUtil : IDisposable
 {
     private class State
@@ -162,7 +162,8 @@ public class FileReaderUtil : IDisposable
                 path, file.Name, output.Length, _derapQueue.Count);
 
             file._initalized = true;
-            file._fileData = output;
+            var newPath = file.GetRealPath(".cpp");
+            await File.WriteAllBytesAsync(newPath, output, _cancellationToken);
         }
         catch (OperationCanceledException) { return; }
         catch (Exception ex)

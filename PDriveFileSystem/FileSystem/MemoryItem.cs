@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MemoryFS.FileSystem;
+namespace PDriveFileSystem.FileSystem;
 public interface IMemoryItem : IDisposable
 {
     public string Name { get; set; }

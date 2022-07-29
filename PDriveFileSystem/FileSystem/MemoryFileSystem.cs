@@ -8,15 +8,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using VirtualMemoryProvider.Util;
+using PDriveFileSystem.Util;
 
-namespace MemoryFS.FileSystem;
+namespace PDriveFileSystem.FileSystem;
 public class MemoryFileSystem : IDisposable
 {
     internal static FileReaderUtil FileReader { get; private set; }
 
     private readonly HashSet<string> _readableExtensions;
     private readonly HashSet<string> _whitelistName;
+    private readonly bool _skipWhitelist;
 
     public readonly string _rootPath = "";
 
@@ -25,19 +26,16 @@ public class MemoryFileSystem : IDisposable
     public ConcurrentDictionary<string, HashSet<(string, bool)>> ChildMap { get; private set; } = new();
     public ConcurrentDictionary<string, string> LowercaseMap { get; private set; } = new();
 
-    public MemoryDirectory Root { get; private set; }
-
     private bool disposed = false;
 
     public MemoryFileSystem(string rootPath, string[] readableExtensions, string[] whitelistName,
-        int runners)
+        int runners, bool local, bool skipWhitelist = false)
     {
         _rootPath = rootPath;
 
         this._readableExtensions = readableExtensions.ToHashSet();
         this._whitelistName = whitelistName.ToHashSet();
-
-        Root = new(_rootPath);
+        this._skipWhitelist = skipWhitelist;
 
         if (FileReader is null)
             FileReader = new(runners);
@@ -47,6 +45,33 @@ public class MemoryFileSystem : IDisposable
         if (!ChildMap.ContainsKey(""))
             ChildMap[""] = new HashSet<(string, bool)>();
         LowercaseMap[""] = "";
+
+        if (!local)
+        {
+            foreach (var file in Directory.GetFiles(rootPath))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+
+            foreach (var dir in Directory.GetDirectories(rootPath))
+            {
+                try
+                {
+                    Directory.Delete(dir, true);
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+        }
     }
 
     public bool DirectoryExists(string path, bool caseSensitive)
@@ -77,8 +102,6 @@ public class MemoryFileSystem : IDisposable
         }
 
         return Files.TryGetValue(actualPath, out file);
-
-        //return Root.TryGetFile(path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries), out file);
     }
 
     public bool TryGetDirectory(string path, bool caseSensitive,
@@ -97,8 +120,6 @@ public class MemoryFileSystem : IDisposable
         }
 
         return Directories.Contains(actualPath);
-
-        //return Root.TryGetDirectory(path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries), out dir);
     }
 
     public HashSet<(string, bool)> GetChildEntries(string path, bool caseSensitive)
@@ -124,10 +145,11 @@ public class MemoryFileSystem : IDisposable
         var ext = Path.GetExtension(path);
         var name = Path.GetFileName(path);
 
-        bool read = _readableExtensions.Contains(ext)
+        bool read = _skipWhitelist
+            || _readableExtensions.Contains(ext)
             || _whitelistName.Contains(name);
 
-        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext, path, this);
+        var file = new MemoryFile(entry, srcPath, pboPath, parentOffset, read, name, ext, path, _rootPath, this);
 
         Files[path] = file;
         var dir = Path.GetDirectoryName(path) ?? "";
@@ -144,30 +166,6 @@ public class MemoryFileSystem : IDisposable
         LowercaseMap[path.ToLower()] = path;
 
         return file;
-
-//#if DEBUG
-//        // Places for debugging.
-//        if (path.StartsWith("ls_animation")) 
-//        { }
-//#endif
-
-//        var dirName = Path.GetDirectoryName(path);
-//        if (dirName is not null)
-//        {
-//            var dir = AddDirectory(dirName);
-//            if (dir is not null)
-//            {
-//                var ext = Path.GetExtension(path);
-//                var name = Path.GetFileName(path);
-
-//                bool read = _readableExtensions.Contains(ext) 
-//                    || _whitelistName.Contains(name);
-
-//                return dir.AddFile(entry, srcPath, pboPath, parentOffset, read, name, ext, FileReader);
-//            }
-//        }
-
-//        return null;
     }
 
     public string? AddDirectory(string path)
@@ -205,18 +203,6 @@ public class MemoryFileSystem : IDisposable
         }
 
         return null;
-
-        //var dirs = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-
-        //var parent = Root;
-        //foreach (var dir in dirs)
-        //{
-        //    if (parent is not null)
-        //        parent = parent.AddDirectory(dir);
-        //    else break;
-        //}
-
-        //return parent;
     }
 
     public async Task InitalizeFileSystemAsync()
@@ -227,24 +213,6 @@ public class MemoryFileSystem : IDisposable
             await InitalizeFileAsync(file, false);
 
         await FileReader.WaitForEmptyQueueAsync();
-
-        //if (FileReader is not null)
-        //{
-        //    Stack<MemoryDirectory> loadStack = new();
-        //    loadStack.Push(Root);
-
-        //    while (loadStack.TryPop(out var parent))
-        //    {
-        //        foreach (var item in parent.Directories)
-        //        {
-        //            loadStack.Push(item);
-        //        }
-
-        //        _ = parent.InitalizeDirectory(false);
-        //    }
-
-        //    await FileReader.WaitForEmptyQueueAsync();
-        //}
     }
 
     public async Task InitalizeFileAsync(string path)
@@ -258,9 +226,6 @@ public class MemoryFileSystem : IDisposable
 
         if (Files.TryGetValue(actualPath, out var file))
             await InitalizeFileAsync(file);
-
-        //if (TryGetFile(path, out var file))
-        //    await InitalizeFileAsync(file);
     }
 
     private async Task InitalizeFileAsync(MemoryFile file, bool wait = true)
@@ -303,20 +268,30 @@ public class MemoryFileSystem : IDisposable
         return actualPath;
     }
 
+    public void Clear()
+    {
+        foreach (var file in Files.Values)
+            file.Dispose();
+
+        Files.Clear();
+        Directories.Clear();
+        LowercaseMap.Clear();
+        ChildMap.Clear();
+    }
+
     public void Dispose()
     {
         disposed = true;
 
         FileReader?.Dispose();
-        Root.Dispose();
-
-        Root = null;
         FileReader = null;
 
         foreach (var file in Files.Values)
             file.Dispose();
         Files = null;
         Directories = null;
+        LowercaseMap = null;
+        ChildMap = null;
     }
 #nullable enable
 }

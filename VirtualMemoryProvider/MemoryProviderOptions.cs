@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     public class MemoryProviderOptions
     {
@@ -14,5 +14,6 @@ namespace MemoryFS
         public string[] ReadableExtensions { get; set; } = Array.Empty<string>();
         public string[] Whitelist { get; set; } = Array.Empty<string>();
         public int InitRunners { get; set; } = 2;
+        public bool Local { get; set; } = false;
     }
 }

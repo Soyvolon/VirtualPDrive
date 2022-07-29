@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Windows.ProjFS;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     /// <summary>
     /// Implements IComparer using <see cref="Microsoft.Windows.ProjFS.Utils.FileNameCompare(string, string)"/>.

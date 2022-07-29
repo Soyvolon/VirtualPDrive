@@ -4,7 +4,7 @@
 using Serilog;
 using System;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     public class Program
     {

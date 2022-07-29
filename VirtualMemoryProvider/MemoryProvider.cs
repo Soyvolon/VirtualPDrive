@@ -10,9 +10,9 @@ using System.IO;
 using System.Threading;
 using Microsoft.Windows.ProjFS;
 using System.Diagnostics.CodeAnalysis;
-using MemoryFS.FileSystem;
+using PDriveFileSystem.FileSystem;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     /// <summary>
     /// This is a simple file system "reflector" provider.  It projects files and directories from
@@ -38,7 +38,7 @@ namespace MemoryFS
         public MemoryProvider(MemoryProviderOptions options)
         {
             this.scratchRoot = options.VirtRoot;
-            this.MemorySystem = new("", options.ReadableExtensions, options.Whitelist, options.InitRunners);
+            this.MemorySystem = new(options.VirtRoot, options.ReadableExtensions, options.Whitelist, options.InitRunners, options.Local);
 
             this.Options = options;
 
@@ -204,7 +204,7 @@ namespace MemoryFS
             var now = DateTime.Now;
             if (this.MemorySystem.TryGetFile(path, false, out var file))
             {
-                fileInfo = new(file.Name, path, file.GetSize(), false, now, now, now, now, FileAttributes.ReadOnly);
+                fileInfo = new(file.Name, path, 0, false, now, now, now, now, FileAttributes.ReadOnly);
                 return true;
             }
             else if (this.MemorySystem.TryGetDirectory(path, false, out var dir))

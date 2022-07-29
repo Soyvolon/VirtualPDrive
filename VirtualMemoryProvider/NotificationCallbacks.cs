@@ -6,7 +6,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     class NotificationCallbacks
     {

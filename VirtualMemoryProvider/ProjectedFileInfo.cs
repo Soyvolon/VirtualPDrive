@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 
-namespace MemoryFS
+namespace PDriveFileSystem
 {
     public class ProjectedFileInfo
     {

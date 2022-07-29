@@ -25,6 +25,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.Core", "bis-file-format
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.PBO", "bis-file-formats\BIS.PBO\BIS.PBO.csproj", "{5EB10A85-2C20-49EA-A3B0-B4575774F100}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDriveFileSystem", "PDriveFileSystem\PDriveFileSystem.csproj", "{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PDriveUtility", "PDriveUtility\PDriveUtility.csproj", "{37179440-5418-4376-B260-B4E231728964}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -89,6 +93,22 @@ Global
 		{5EB10A85-2C20-49EA-A3B0-B4575774F100}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5EB10A85-2C20-49EA-A3B0-B4575774F100}.Release|x64.ActiveCfg = Release|Any CPU
 		{5EB10A85-2C20-49EA-A3B0-B4575774F100}.Release|x64.Build.0 = Release|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Debug|x64.Build.0 = Debug|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Release|x64.ActiveCfg = Release|Any CPU
+		{D4410A29-6A3E-4DFA-8C28-343669DA8DEF}.Release|x64.Build.0 = Release|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Debug|x64.Build.0 = Debug|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Release|x64.ActiveCfg = Release|Any CPU
+		{37179440-5418-4376-B260-B4E231728964}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
