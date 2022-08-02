@@ -48,10 +48,13 @@ public static class PathUtility
         { }
 #endif
 
-        var pathParts = prefixTree[1..pathOffset].ToList();
+        var pathParts = prefixTree[..pathOffset].ToList();
         pathParts.AddRange(fileTree);
 
-        var output = Path.Combine(pathParts.ToArray());
+        var output = Path.Combine(pathParts
+            .SkipWhile(x => x.Equals(ignoreFront,
+                forceLowercase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            .ToArray());
         return output;
     }
 }

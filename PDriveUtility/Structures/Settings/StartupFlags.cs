@@ -9,4 +9,7 @@ public class StartupFlags
 {
     public bool Arma3NotFound { get; set; } = false;
     public bool OutputPathNotFound { get; set; } = false;
+
+    public bool SkipArma3 { get; set; } = false;
+    public bool SkipOutput { get; set; } = false;
 }

@@ -14,6 +14,8 @@ public interface ISettingsService
     public ApplicationSettings ApplicationSettings { get; protected set; }
     public StartupFlags StartupFlags { get; protected set; }
 
+    public Task SaveApplicationSettingsAsync();
+
     public Task InitalizeAsync();
     public void ReloadLogger();
 }

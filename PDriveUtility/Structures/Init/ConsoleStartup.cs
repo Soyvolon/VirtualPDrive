@@ -3,6 +3,8 @@
 using Microsoft.Extensions.DependencyInjection;
 
 using PDriveUtility.Forms.Init;
+using PDriveUtility.Forms.Main;
+using PDriveUtility.Forms.Settings;
 using PDriveUtility.Services.Arma;
 using PDriveUtility.Services.Local;
 using PDriveUtility.Services.Settings;
@@ -59,7 +61,7 @@ public class ConsoleStartup
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
-            var startup = services.GetRequiredService<Startup>();
+            var startup = services.GetRequiredService<MainWindow>();
             
             Application.Run(startup);
         }
@@ -68,7 +70,9 @@ public class ConsoleStartup
     private void Initalize(ServiceCollection services)
     {
         // Base forms
-        services.AddTransient<Startup>();
+        services.AddTransient<Startup>()
+            .AddTransient<MainWindow>()
+            .AddTransient<PreferencesMenu>();
 
         // Services
         services.AddSingleton<ISettingsService, SettingsService>()

@@ -29,7 +29,7 @@ public class MemoryFileSystem : IDisposable
     private bool disposed = false;
 
     public MemoryFileSystem(string rootPath, string[] readableExtensions, string[] whitelistName,
-        int runners, bool local, bool skipWhitelist = false)
+        int runners, bool local, bool skipWhitelist = false, bool skipClean = false)
     {
         _rootPath = rootPath;
 
@@ -46,7 +46,7 @@ public class MemoryFileSystem : IDisposable
             ChildMap[""] = new HashSet<(string, bool)>();
         LowercaseMap[""] = "";
 
-        if (!local)
+        if (!local && !skipClean)
         {
             foreach (var file in Directory.GetFiles(rootPath))
             {

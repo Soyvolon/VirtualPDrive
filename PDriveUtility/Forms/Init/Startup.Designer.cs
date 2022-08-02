@@ -1,4 +1,7 @@
-﻿using PDriveUtility.Services.Arma;
+﻿using Microsoft.Extensions.DependencyInjection;
+
+using PDriveUtility.Forms.Main;
+using PDriveUtility.Services.Arma;
 using PDriveUtility.Services.Local;
 using PDriveUtility.Services.Settings;
 using PDriveUtility.Structures.Init;
@@ -14,123 +17,6 @@ partial class Startup
     /// </summary>
     private System.ComponentModel.IContainer components = null;
 
-    private ConsoleStartup _startup;
-    private ISettingsService _settingsService;
-    private IArmaService _armaService;
-    private ILocalFileService _localFileService;
-
-    public Startup(ConsoleStartup startup, ISettingsService settingsService, 
-        IArmaService armaService, ILocalFileService localFileService)
-    {
-        _startup = startup;
-        _settingsService = settingsService;
-        _armaService = armaService;
-        _localFileService = localFileService;
-
-        this.Shown += Startup_Shown;
-
-        InitializeComponent();
-    }
-
-    private void Startup_Shown(object sender, EventArgs e)
-    {
-        _ = Task.Run(async () => await StartupApplicationAsync());
-    }   
-    
-    private async Task StartupApplicationAsync()
-    {
-        TryUpdateProgressBar(4, 1, "Loading Settings...");
-
-        await _settingsService.InitalizeAsync();
-
-        TryUpdateProgressBar(4, 2, "Loading ArmA 3 PBOs...");
-
-        _armaService.Reset();
-
-        var pboList = _armaService.GetArmAPBOs();
-
-        if (pboList is not null)
-        {
-            for(int i = 0; i < pboList.Count; i++)
-            {
-                TryUpdateSecondaryProgressBar(pboList.Count, i, $"Reading {Path.GetFileName(pboList[i])}");
-                _armaService.ReadPBO(pboList[i]);
-            }
-
-            TryUpdateSecondaryProgressBar(1, 0, "Waiting...");
-        }
-        else
-        {
-            // Set this flag for later. The main form will use it.
-            _settingsService.StartupFlags.Arma3NotFound = true;
-        }
-
-        TryUpdateProgressBar(4, 3, "Reading local files...");
-
-        // get local dirs.
-
-        var localList = _localFileService.GetLocalDirectories();
-
-        if (localList is not null)
-        {
-            for(int i = 0; i < localList.Count; i++)
-            {
-                TryUpdateSecondaryProgressBar(localList.Count, i, $"Processing {Path.GetFileName(localList[i])}");
-                _localFileService.LoadDirectory(localList[i]);
-            }
-
-            TryUpdateSecondaryProgressBar(1, 0, "Waiting...");
-        }
-        else
-        {
-            _settingsService.StartupFlags.OutputPathNotFound = true;
-        }
-
-        // read local dirs.
-
-        TryUpdateProgressBar(4, 4, "Finalizing...");
-    }
-
-    private void TryUpdateProgressBar(int max, int val, string text)
-    {
-        if (ProgressBar.InvokeRequired)
-        {
-            ProgressBar.Invoke(TryUpdateProgressBar, max, val, text);
-            return;
-        }    
-
-        try
-        {
-            ProgressBar.Maximum = max;
-            ProgressBar.Value = val;
-            ProgressLabel.Text = text;
-        }
-        catch
-        {
-            // Do nothing.
-        }
-    }
-
-    private void TryUpdateSecondaryProgressBar(int max, int val, string text)
-    {
-        if (SecondaryProgressBar.InvokeRequired)
-        {
-            SecondaryProgressBar.Invoke(TryUpdateSecondaryProgressBar, max, val, text);
-            return;
-        }
-
-        try
-        {
-            SecondaryProgressBar.Maximum = max;
-            SecondaryProgressBar.Value = val;
-            SecondaryProgressLabel.Text = text;
-        }
-        catch
-        {
-            // Do nothing.
-        }
-    }
-
     /// <summary>
     /// Clean up any resources being used.
     /// </summary>
@@ -145,6 +31,10 @@ partial class Startup
         this.Shown -= Startup_Shown;
 
         _startup = null;
+        _settingsService = null;
+        _localFileService = null;
+        _armaService = null;
+        _services = null;
 
         base.Dispose(disposing);
     }
@@ -238,6 +128,7 @@ partial class Startup
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Startup";
             this.TopMost = true;
+            this.TransparencyKey = System.Drawing.Color.Transparent;
             this.UseWaitCursor = true;
             this.ResumeLayout(false);
 

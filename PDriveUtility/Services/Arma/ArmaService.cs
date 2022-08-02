@@ -23,7 +23,7 @@ public class ArmaService : IArmaService
     {
         _settingsService = settingsService;
         FileSystem = new(_settingsService.ApplicationSettings.OutputPath, Array.Empty<string>(), Array.Empty<string>(),
-            _settingsService.ApplicationSettings.ConcurrentFileLoads, false, true);
+            _settingsService.ApplicationSettings.ConcurrentFileLoads, false, true, true);
     }
 
     public void Reset()
@@ -50,15 +50,23 @@ public class ArmaService : IArmaService
 
         while (checkStack.TryPop(out var dirRoot))
         {
-            foreach (var dir in Directory.GetDirectories(dirRoot))
+            try
             {
-                var name = Path.GetFileName(dir);
-                if (name.Equals("!Workshop", StringComparison.OrdinalIgnoreCase)) continue;
+                foreach (var dir in Directory.GetDirectories(dirRoot))
+                {
+                    var name = Path.GetFileName(dir);
+                    if (name.Equals("!Workshop", StringComparison.OrdinalIgnoreCase)) continue;
 
-                if (name.Equals("addons", StringComparison.OrdinalIgnoreCase))
-                    pboFolders.Add(dir);
-                else
-                    checkStack.Push(dir);
+                    if (name.Equals("addons", StringComparison.OrdinalIgnoreCase))
+                        pboFolders.Add(dir);
+                    else
+                        checkStack.Push(dir);
+                }
+            }
+            catch
+            {
+                // Do nothing.
+                continue;
             }
         }
 
@@ -83,7 +91,6 @@ public class ArmaService : IArmaService
         {
             foreach (var file in pbo.FileEntries)
             {
-
                 var root = Path.Join(pbo.Prefix, Path.GetDirectoryName(file.FileName) ?? "");
 
                 if (root is not null)

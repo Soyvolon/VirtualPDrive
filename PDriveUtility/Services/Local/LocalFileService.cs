@@ -2,6 +2,7 @@
 using PDriveUtility.Services.Settings;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,8 @@ public class LocalFileService : ILocalFileService
 {
     private readonly ISettingsService _settingsService;
     private readonly IArmaService _armaService;
+
+
 
     public LocalFileService(ISettingsService settingsService, IArmaService armaService)
     {
@@ -30,24 +33,27 @@ public class LocalFileService : ILocalFileService
         foreach (var dir in dirs)
         {
             var local = GetLocalPath(dir);
-            _armaService.FileSystem.DirectoryExists()
+            if (_armaService.FileSystem.DirectoryExists(local, false))
+            {
+                output.Add(dir);
+            }
         }
+
+        return output;
     }
 
     public void LoadDirectory(string dirPath)
     {
-        throw new NotImplementedException();
+        // throw new NotImplementedException();
     }
 
     public string GetLocalPath(string absolutePath)
     {
-        throw new NotImplementedException();
-
+        return Path.GetRelativePath(_settingsService.ApplicationSettings.OutputPath, absolutePath);
     }
 
     public string GetAbsolutePath(string localPath)
     {
-        throw new NotImplementedException();
-
+        return Path.Join(_settingsService.ApplicationSettings.OutputPath, localPath);
     }
 }

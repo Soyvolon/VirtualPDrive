@@ -104,4 +104,17 @@ public class SettingsService : ISettingsService
 
         Log.Logger = cfg.CreateLogger();
     }
+
+    public async Task SaveApplicationSettingsAsync()
+    {
+        var settingsPath = Properties.Settings.Default.SettingsPath;
+
+        Directory.CreateDirectory(settingsPath);
+
+        var appSettingsPath = Path.Join(settingsPath, "settings.json");
+
+        // save settings.
+        await using FileStream fs = new(appSettingsPath, FileMode.Create);
+        await JsonSerializer.SerializeAsync(fs, ApplicationSettings);
+    }
 }
