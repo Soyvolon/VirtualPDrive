@@ -14,7 +14,7 @@ public class LocalFileService : ILocalFileService
     private readonly ISettingsService _settingsService;
     private readonly IArmaService _armaService;
 
-
+    public ConcurrentDictionary<string, FileInfo> LocalFiles { get; set; } = new();
 
     public LocalFileService(ISettingsService settingsService, IArmaService armaService)
     {
@@ -44,7 +44,12 @@ public class LocalFileService : ILocalFileService
 
     public void LoadDirectory(string dirPath)
     {
-        // throw new NotImplementedException();
+        var allFiles = Directory.GetFiles(dirPath, "*", SearchOption.AllDirectories);
+
+        foreach (var file in allFiles)
+        {
+            LocalFiles[file] = new FileInfo(file);
+        }
     }
 
     public string GetLocalPath(string absolutePath)

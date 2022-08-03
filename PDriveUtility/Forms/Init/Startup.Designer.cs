@@ -30,12 +30,6 @@ partial class Startup
 
         this.Shown -= Startup_Shown;
 
-        _startup = null;
-        _settingsService = null;
-        _localFileService = null;
-        _armaService = null;
-        _services = null;
-
         base.Dispose(disposing);
     }
 

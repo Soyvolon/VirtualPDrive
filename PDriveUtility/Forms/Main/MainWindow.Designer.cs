@@ -43,11 +43,12 @@ partial class MainWindow
             this.mainSpilt = new System.Windows.Forms.SplitContainer();
             this.fileActionSplit = new System.Windows.Forms.SplitContainer();
             this.fileTree = new System.Windows.Forms.TreeView();
+            this.fileIconImageList = new System.Windows.Forms.ImageList(this.components);
             this.fileStatusImageList = new System.Windows.Forms.ImageList(this.components);
             this.logOutput = new System.Windows.Forms.ListBox();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
-            this.primaryActionBar = new System.Windows.Forms.ToolStripProgressBar();
-            this.fileIconImageList = new System.Windows.Forms.ImageList(this.components);
+            this.backgroundProgress = new System.Windows.Forms.ToolStripProgressBar();
+            this.backgroundLabel = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.activeDirWatcher)).BeginInit();
             this.mainMenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.mainSpilt)).BeginInit();
@@ -137,6 +138,17 @@ partial class MainWindow
             this.fileTree.StateImageList = this.fileStatusImageList;
             this.fileTree.TabIndex = 0;
             // 
+            // fileIconImageList
+            // 
+            this.fileIconImageList.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
+            this.fileIconImageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("fileIconImageList.ImageStream")));
+            this.fileIconImageList.TransparentColor = System.Drawing.Color.Transparent;
+            this.fileIconImageList.Images.SetKeyName(0, "folder_FILL0_wght400_GRAD0_opsz20.png");
+            this.fileIconImageList.Images.SetKeyName(1, "folder_open_FILL0_wght400_GRAD0_opsz20.png");
+            this.fileIconImageList.Images.SetKeyName(2, "settings_FILL0_wght400_GRAD0_opsz20.png");
+            this.fileIconImageList.Images.SetKeyName(3, "feed_FILL0_wght400_GRAD0_opsz20.png");
+            this.fileIconImageList.Images.SetKeyName(4, "image_FILL0_wght400_GRAD0_opsz20.png");
+            // 
             // fileStatusImageList
             // 
             this.fileStatusImageList.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
@@ -161,27 +173,24 @@ partial class MainWindow
             // statusStrip
             // 
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.primaryActionBar});
+            this.backgroundProgress,
+            this.backgroundLabel});
             this.statusStrip.Location = new System.Drawing.Point(0, 110);
             this.statusStrip.Name = "statusStrip";
             this.statusStrip.Size = new System.Drawing.Size(836, 22);
             this.statusStrip.TabIndex = 0;
             this.statusStrip.Text = "statusStrip1";
             // 
-            // primaryActionBar
+            // backgroundProgress
             // 
-            this.primaryActionBar.Name = "primaryActionBar";
-            this.primaryActionBar.Size = new System.Drawing.Size(100, 16);
+            this.backgroundProgress.Name = "backgroundProgress";
+            this.backgroundProgress.Size = new System.Drawing.Size(100, 16);
             // 
-            // fileIconImageList
+            // backgroundLabel
             // 
-            this.fileIconImageList.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
-            this.fileIconImageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("fileIconImageList.ImageStream")));
-            this.fileIconImageList.TransparentColor = System.Drawing.Color.Transparent;
-            this.fileIconImageList.Images.SetKeyName(0, "folder_FILL0_wght400_GRAD0_opsz20.png");
-            this.fileIconImageList.Images.SetKeyName(1, "settings_FILL0_wght400_GRAD0_opsz20.png");
-            this.fileIconImageList.Images.SetKeyName(2, "feed_FILL0_wght400_GRAD0_opsz20.png");
-            this.fileIconImageList.Images.SetKeyName(3, "image_FILL0_wght400_GRAD0_opsz20.png");
+            this.backgroundLabel.Name = "backgroundLabel";
+            this.backgroundLabel.Size = new System.Drawing.Size(57, 17);
+            this.backgroundLabel.Text = "Waiting...";
             // 
             // MainWindow
             // 
@@ -222,9 +231,10 @@ partial class MainWindow
     private SplitContainer mainSpilt;
     private SplitContainer fileActionSplit;
     private StatusStrip statusStrip;
-    private ToolStripProgressBar primaryActionBar;
+    private ToolStripProgressBar backgroundProgress;
     private ListBox logOutput;
     private TreeView fileTree;
     private ImageList fileStatusImageList;
     private ImageList fileIconImageList;
+    private ToolStripStatusLabel backgroundLabel;
 }

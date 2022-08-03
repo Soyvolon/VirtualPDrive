@@ -1,5 +1,6 @@
 ﻿
 using PDriveUtility.Services.Arma;
+using PDriveUtility.Services.Files;
 using PDriveUtility.Services.Local;
 using PDriveUtility.Services.Settings;
 using PDriveUtility.Structures.Init;
@@ -8,30 +9,33 @@ namespace PDriveUtility.Forms.Init;
 public partial class Startup : Form
 {
 
-    private ConsoleStartup _startup;
-    private ISettingsService _settingsService;
-    private IArmaService _armaService;
-    private ILocalFileService _localFileService;
-    private IServiceProvider _services;
+    private readonly ConsoleStartup _startup;
+    private readonly ISettingsService _settingsService;
+    private readonly IArmaService _armaService;
+    private readonly ILocalFileService _localFileService;
+    private readonly IServiceProvider _services;
+    private readonly IFileManagerService _fileManagerService;
 
     public delegate void OnStartupCompleted(object sender);
     public event OnStartupCompleted? StartupCompleted;
 
     public Startup(ConsoleStartup startup, ISettingsService settingsService,
-        IArmaService armaService, ILocalFileService localFileService, IServiceProvider services)
+        IArmaService armaService, ILocalFileService localFileService, IServiceProvider services,
+        IFileManagerService fileManagerService)
     {
         _startup = startup;
         _settingsService = settingsService;
         _armaService = armaService;
         _localFileService = localFileService;
         _services = services;
+        _fileManagerService = fileManagerService;
 
         this.Shown += Startup_Shown;
 
         InitializeComponent();
     }
 
-    private void Startup_Shown(object sender, EventArgs e)
+    private void Startup_Shown(object? sender, EventArgs e)
     {
         _ = Task.Run(async () => await StartupApplicationAsync());
     }
@@ -93,7 +97,7 @@ public partial class Startup : Form
 
         TryUpdateProgressBar(4, 4, "Finalizing...");
 
-        await Task.Delay(TimeSpan.FromSeconds(0.5));
+        _fileManagerService.Initalize();
 
         StartupCompleted?.Invoke(this);
 

@@ -3,6 +3,7 @@
 using PDriveUtility.Forms.Init;
 using PDriveUtility.Forms.Settings;
 using PDriveUtility.Services.Arma;
+using PDriveUtility.Services.Files;
 using PDriveUtility.Services.Local;
 using PDriveUtility.Services.Settings;
 
@@ -21,16 +22,14 @@ public partial class MainWindow : Form
 {
     private readonly IServiceProvider _services;
     private readonly ISettingsService _settingsService;
-    private readonly IArmaService _armaService;
-    private readonly ILocalFileService _localFileService;
+    private readonly IFileManagerService _fileManager;
 
     public MainWindow(IServiceProvider services, ISettingsService settingsService,
-        IArmaService armaService, ILocalFileService localFileService)
+        IFileManagerService fileManager)
     {
         _services = services;
         _settingsService = settingsService;
-        _armaService = armaService;
-        _localFileService = localFileService;
+        _fileManager = fileManager;
 
         this.Shown += Main_Shown;
 
@@ -39,7 +38,8 @@ public partial class MainWindow : Form
 
     private void LoadMainWindow()
     {
-
+        var nodes = _fileManager.GetTopLevelNodes();
+        fileTree.Nodes.AddRange(nodes);
     }
 
     private void Main_Shown(object? sender, EventArgs e)
@@ -73,7 +73,7 @@ public partial class MainWindow : Form
         if (saved && (reloadArma || reloadLocal))
         {
             _settingsService.StartupFlags.SkipArma3 = !reloadArma;
-            _settingsService.StartupFlags.SkipOutput = !reloadLocal;
+            _settingsService.StartupFlags.SkipOutput = !reloadLocal && !reloadArma;
 
             this.Invoke(Main_Shown, this, new EventArgs());
         }

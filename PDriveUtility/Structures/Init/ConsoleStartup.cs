@@ -6,6 +6,7 @@ using PDriveUtility.Forms.Init;
 using PDriveUtility.Forms.Main;
 using PDriveUtility.Forms.Settings;
 using PDriveUtility.Services.Arma;
+using PDriveUtility.Services.Files;
 using PDriveUtility.Services.Local;
 using PDriveUtility.Services.Settings;
 
@@ -77,7 +78,8 @@ public class ConsoleStartup
         // Services
         services.AddSingleton<ISettingsService, SettingsService>()
             .AddSingleton<IArmaService, ArmaService>()
-            .AddSingleton<ILocalFileService, LocalFileService>();
+            .AddSingleton<ILocalFileService, LocalFileService>()
+            .AddSingleton<IFileManagerService, FileManagerService>();
 
         // Utils
         services.AddSingleton(this);
